@@ -95,4 +95,9 @@ Exempt: commits dedicated solely to recording the changelog (`changelog: record 
   - **Status & Map Refresh (Issue #10):** Synchronized `WHERE_WE_ARE.md` and `MAP.md` with today's operational status, documenting the complete migration to AGY bot, active cross-repo dispatching, authenticated git push capabilities, and moved initial scaffolding task to done.
   - **Impact:** Living documentation accurately reflects current AGY capabilities and infrastructure state; zero information loss for incoming sessions.
 
+- `ed157b8`
+  - **Onboarding Guide & Living State Refresh (Issue #11):** Expanded `Team/START_HERE.md` with comprehensive repository overview, AGY bot invocation patterns, batch-dispatch architecture, task authoring rules, and synchronized `WHERE_WE_ARE.md` and `MAP.md` with current round-robin and hook infrastructure; added task 003.
+  - **Impact:** Users and incoming agents have an immediate, actionable guide on navigating and commanding Control-Room and dispatching jobs to AGY; living state reflects all operational mechanisms.
+
+
 
