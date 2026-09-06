@@ -1,0 +1,240 @@
+name: Control-Room AGY Issue Bot
+
+on:
+  issues:
+    types: [opened]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      prompt:
+        description: 'Manual prompt for AGY'
+        required: false
+        default: 'Read AGENTS.md, check Team/WHERE_WE_ARE.md, and report project status.'
+
+concurrency:
+  group: agy-${{ github.event.issue.number || github.run_id }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  agy-bot:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.issue.body, '@agy') ||
+      contains(github.event.comment.body, '@agy')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # =========================================================================
+      # 1. Acknowledge immediately
+      # =========================================================================
+      - name: Post Acknowledgement
+        if: github.event_name != 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue comment ${{ github.event.issue.number }} \
+            --repo ${{ github.repository }} \
+            --body "🤖 **AGY is on it.** Dispatching to the worker fleet — I'll reply here when done."
+
+      # =========================================================================
+      # 2. Build prompt from issue context
+      # =========================================================================
+      - name: Build Prompt
+        id: build_prompt
+        run: |
+          set -euo pipefail
+
+          AGENTS_CONTENT=""
+          WHERE_WE_ARE=""
+          [ -f AGENTS.md ] && AGENTS_CONTENT=$(cat AGENTS.md)
+          [ -f Team/WHERE_WE_ARE.md ] && WHERE_WE_ARE=$(cat Team/WHERE_WE_ARE.md)
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TASK="${{ inputs.prompt }}"
+          elif [ "${{ github.event_name }}" = "issue_comment" ]; then
+            TASK="Issue #${{ github.event.issue.number }}: ${{ github.event.issue.title }}
+Issue body: ${{ github.event.issue.body }}
+Action requested in comment: ${{ github.event.comment.body }}"
+          else
+            TASK="Issue #${{ github.event.issue.number }}: ${{ github.event.issue.title }}
+${{ github.event.issue.body }}"
+          fi
+
+          {
+            echo "=== REPOSITORY GOVERNANCE (follow strictly) ==="
+            echo "$AGENTS_CONTENT"
+            echo ""
+            echo "=== CURRENT PROJECT STATE ==="
+            echo "$WHERE_WE_ARE"
+            echo ""
+            echo "=== TASK FROM GITHUB ISSUE ==="
+            echo "$TASK"
+            echo ""
+            echo "=== INSTRUCTIONS ==="
+            echo "1. Perform exactly the task described above."
+            echo "2. Check Team/MAP.md and Team/WHERE_WE_ARE.md before touching files."
+            echo "3. Run: python Tools/run_gates.py -- all gates must pass."
+            echo "4. Record every commit in Team/CHANGELOG.md with real short hash."
+            echo "5. Push directly to main when done."
+            echo "6. End your response with a plain-English summary of what you did."
+          } > /tmp/agy_prompt.txt
+
+          echo "Prompt ready: $(wc -l < /tmp/agy_prompt.txt) lines"
+
+      # =========================================================================
+      # 3. Dispatch agw-worker on Mohammadlali/agw-workers
+      # =========================================================================
+      - name: Dispatch AGY Worker
+        id: dispatch
+        env:
+          GH_TOKEN: ${{ secrets.MOHAMMADLALI_PAT }}
+        run: |
+          set -euo pipefail
+
+          PROMPT=$(cat /tmp/agy_prompt.txt)
+          CALLBACK_ID="cr-${{ github.event.issue.number }}-${{ github.run_id }}"
+
+          echo "Dispatching worker at $(date -u +%Y-%m-%dT%H:%M:%SZ) ..."
+
+          gh workflow run agw-worker.yml \
+            --repo Mohammadlali/agw-workers \
+            --field "prompt=$PROMPT" \
+            --field "callback_id=$CALLBACK_ID" \
+            --field "acc_index=0"
+
+          echo "Waiting for run to register in GitHub..."
+          sleep 10
+
+          # Find the newest run (just dispatched)
+          RUN_ID=$(gh run list \
+            --repo Mohammadlali/agw-workers \
+            --workflow agw-worker.yml \
+            --limit 5 \
+            --json databaseId,createdAt \
+            | jq -r 'sort_by(.createdAt) | last | .databaseId')
+
+          if [ -z "$RUN_ID" ] || [ "$RUN_ID" = "null" ]; then
+            echo "ERROR: Could not find dispatched run ID"
+            exit 1
+          fi
+
+          echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+          echo "callback_id=$CALLBACK_ID" >> $GITHUB_OUTPUT
+          echo "Dispatched successfully. Worker run ID: $RUN_ID"
+
+      # =========================================================================
+      # 4. Poll until AGY run completes (max ~20 min, every 30s)
+      # =========================================================================
+      - name: Wait for AGY Completion
+        id: wait
+        env:
+          GH_TOKEN: ${{ secrets.MOHAMMADLALI_PAT }}
+        run: |
+          RUN_ID="${{ steps.dispatch.outputs.run_id }}"
+          echo "Polling run $RUN_ID ..."
+
+          CONCLUSION="timed_out"
+          for i in $(seq 1 40); do
+            RESULT=$(gh run view "$RUN_ID" \
+              --repo Mohammadlali/agw-workers \
+              --json status,conclusion \
+              --jq '{status: .status, conclusion: .conclusion}')
+            STATUS=$(echo "$RESULT" | jq -r '.status')
+            CONCLUSION_RAW=$(echo "$RESULT" | jq -r '.conclusion')
+
+            echo "[$i/40] status=$STATUS conclusion=$CONCLUSION_RAW"
+
+            if [ "$STATUS" = "completed" ]; then
+              CONCLUSION="$CONCLUSION_RAW"
+              break
+            fi
+            sleep 30
+          done
+
+          echo "conclusion=$CONCLUSION" >> $GITHUB_OUTPUT
+          echo "Final conclusion: $CONCLUSION"
+
+      # =========================================================================
+      # 5. Download AGY output artifact
+      # =========================================================================
+      - name: Download AGY Output
+        id: download
+        env:
+          GH_TOKEN: ${{ secrets.MOHAMMADLALI_PAT }}
+        run: |
+          RUN_ID="${{ steps.dispatch.outputs.run_id }}"
+          mkdir -p /tmp/agy-result
+
+          gh run download "$RUN_ID" \
+            --repo Mohammadlali/agw-workers \
+            --dir /tmp/agy-result 2>/dev/null || true
+
+          OUTPUT_FILE=$(find /tmp/agy-result -name "agy_output.txt" | head -1)
+          if [ -n "$OUTPUT_FILE" ]; then
+            cp "$OUTPUT_FILE" /tmp/agy_final_output.txt
+            echo "found=true" >> $GITHUB_OUTPUT
+            echo "Output: $(wc -l < /tmp/agy_final_output.txt) lines"
+          else
+            echo "found=false" >> $GITHUB_OUTPUT
+            echo "(no output file found)" > /tmp/agy_final_output.txt
+          fi
+
+      # =========================================================================
+      # 6. Post result back to the issue
+      # =========================================================================
+      - name: Post Result to Issue
+        if: always() && github.event_name != 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          CONCLUSION="${{ steps.wait.outputs.conclusion }}"
+          RUN_URL="https://github.com/Mohammadlali/agw-workers/actions/runs/${{ steps.dispatch.outputs.run_id }}"
+
+          if [ "$CONCLUSION" = "success" ] && [ "${{ steps.download.outputs.found }}" = "true" ]; then
+            OUTPUT=$(head -c 60000 /tmp/agy_final_output.txt)
+            COMMENT="✅ **AGY completed the task.**
+
+<details>
+<summary>📋 AGY Output (click to expand)</summary>
+
+\`\`\`
+$OUTPUT
+\`\`\`
+
+</details>
+
+---
+🔗 [View worker run]($RUN_URL)"
+          else
+            COMMENT="❌ **AGY run ended with status: \`$CONCLUSION\`.**
+
+The worker run may have failed or produced no output.
+
+🔗 [View worker run]($RUN_URL)"
+          fi
+
+          gh issue comment ${{ github.event.issue.number }} \
+            --repo ${{ github.repository }} \
+            --body "$COMMENT"
+
+      # =========================================================================
+      # Summary
+      # =========================================================================
+      - name: Summary
+        if: always()
+        run: |
+          echo "### 🤖 AGY Bot Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Trigger:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Issue:** #${{ github.event.issue.number || 'N/A' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Worker Run ID:** ${{ steps.dispatch.outputs.run_id || 'N/A' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Conclusion:** ${{ steps.wait.outputs.conclusion || 'N/A' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Output found:** ${{ steps.download.outputs.found || 'N/A' }}" >> $GITHUB_STEP_SUMMARY
