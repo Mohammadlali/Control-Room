@@ -23,5 +23,10 @@ Exempt: commits dedicated solely to recording the changelog (`changelog: record 
   - **Gemini Issue Bot:** Integrated official `google-github-actions/run-gemini-cli` with an 8-account health-check pool and load balancing.
   - **Impact:** Enabled automated resolution of GitHub Issues tagged with `@gemini-cli` across 8 fallback accounts.
 
+- `5dddedd`
+  - **Live Model Quota Resolver:** Added live probing across candidate models (`gemini-2.5-flash`, `gemini-2.0-flash`, `gemini-1.5-flash`, `gemini-2.5-pro`) to ensure selection of an account and model with verified quota.
+  - **Impact:** Fixed HTTP 429 limit:0 error caused by default model selection.
+
+
 
 
