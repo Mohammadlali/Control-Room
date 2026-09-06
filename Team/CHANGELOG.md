@@ -73,5 +73,13 @@ Exempt: commits dedicated solely to recording the changelog (`changelog: record 
 
 - `63e00fa`
   - **YAML Parse Fix (heredoc):** Replaced heredoc (content at column 0 was truncating `run: |` block) with indented `echo` commands inside a subshell redirect.
-  - **Impact:** Eliminates the persistent YAML parse error; workflow will now show proper name and trigger on issues.
+  - **Impact:** Eliminates the persistent YAML parse error; workflow now triggers on issues correctly.
+
+- `5699d13`
+  - **CHANGELOG Catch-up:** Recorded commits 91512c6, 1b9ac11, 63e00fa.
+  - **Impact:** check_changelog gate passes.
+
+- `1dcf383`
+  - **Context-embedded Prompt:** Sanitizes and embeds AGENTS.md and WHERE_WE_ARE.md directly into AGY prompt. Instructs AGY not to clone or access external repos.
+  - **Impact:** Eliminates 5-minute timeout caused by AGY attempting to clone Control-Room without credentials.
 
