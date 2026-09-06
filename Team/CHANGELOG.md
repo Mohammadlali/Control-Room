@@ -99,5 +99,6 @@ Exempt: commits dedicated solely to recording the changelog (`changelog: record 
   - **Onboarding Guide & Living State Refresh (Issue #11):** Expanded `Team/START_HERE.md` with comprehensive repository overview, AGY bot invocation patterns, batch-dispatch architecture, task authoring rules, and synchronized `WHERE_WE_ARE.md` and `MAP.md` with current round-robin and hook infrastructure; added task 003.
   - **Impact:** Users and incoming agents have an immediate, actionable guide on navigating and commanding Control-Room and dispatching jobs to AGY; living state reflects all operational mechanisms.
 
-
-
+- `4a04519`
+  - **Onboarding Guide Enrichment & Architecture Alignment (Issue #11):** Added practical prompt patterns, verification gates philosophy (Silent Pass, No Claim Without a Probe), and end-to-end request lifecycle diagram to `Team/START_HERE.md`; updated `README.md` architecture to reflect all active workflows (`control-agy.yml`, `batch-dispatch.yml`, `control-gates.yml`) and Persian onboarding links; initialized `Team/tasks/pending/.gitkeep`.
+  - **Impact:** Provides operators and developers with actionable templates to immediately assign tasks to AGY Bot; aligns documentation tree with actual repo infrastructure.
