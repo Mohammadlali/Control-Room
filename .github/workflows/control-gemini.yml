@@ -1,4 +1,4 @@
-﻿name: Control-Room Gemini Issue Bot
+name: Control-Room Gemini Issue Bot
 
 on:
   issues:
@@ -46,6 +46,7 @@ jobs:
       # =========================================================================
       - name: Run Gemini CLI (Account 1)
         id: acc1
+        continue-on-error: true
         uses: google-github-actions/run-gemini-cli@v0
         env:
           GEMINI_CLI_TRUST_WORKSPACE: 'true'
@@ -56,7 +57,7 @@ jobs:
           workflow_name: control-gemini
           settings: |
             {
-              "model": { "id": "gemini-2.5-flash" }
+              "model": { "id": "gemini-3.5-flash" }
             }
           prompt: |
             Read AGENTS.md at the repository root and follow it strictly -- it is this repository's non-negotiable governance law.
@@ -66,15 +67,16 @@ jobs:
             Record every commit in Team/CHANGELOG.md with its real short hash and push directly to main.
 
       # =========================================================================
-      # TIER 2: Account 2 (Fallback if Account 1 fails/exhausted)
+      # TIER 2: Account 2 (Fallback — only if Account 1 did NOT succeed)
       # =========================================================================
-      - name: Reset Tree on Account 1 Failure
-        if: failure()
+      - name: Reset Tree Before Account 2
+        if: steps.acc1.outcome != 'success'
         run: git reset --hard HEAD; git clean -fd
 
       - name: Run Gemini CLI (Account 2 - Fallback)
-        if: failure()
         id: acc2
+        if: steps.acc1.outcome != 'success'
+        continue-on-error: true
         uses: google-github-actions/run-gemini-cli@v0
         env:
           GEMINI_CLI_TRUST_WORKSPACE: 'true'
@@ -85,7 +87,7 @@ jobs:
           workflow_name: control-gemini
           settings: |
             {
-              "model": { "id": "gemini-2.5-flash" }
+              "model": { "id": "gemini-3.5-flash" }
             }
           prompt: |
             Read AGENTS.md at the repository root and follow it strictly -- it is this repository's non-negotiable governance law.
@@ -95,15 +97,16 @@ jobs:
             Record every commit in Team/CHANGELOG.md with its real short hash and push directly to main.
 
       # =========================================================================
-      # TIER 3: Account 3 (Fallback if Account 2 fails)
+      # TIER 3: Account 3 (Fallback — only if Accounts 1 & 2 did NOT succeed)
       # =========================================================================
-      - name: Reset Tree on Account 2 Failure
-        if: failure()
+      - name: Reset Tree Before Account 3
+        if: steps.acc1.outcome != 'success' && steps.acc2.outcome != 'success'
         run: git reset --hard HEAD; git clean -fd
 
       - name: Run Gemini CLI (Account 3 - Fallback)
-        if: failure()
         id: acc3
+        if: steps.acc1.outcome != 'success' && steps.acc2.outcome != 'success'
+        continue-on-error: true
         uses: google-github-actions/run-gemini-cli@v0
         env:
           GEMINI_CLI_TRUST_WORKSPACE: 'true'
@@ -114,7 +117,7 @@ jobs:
           workflow_name: control-gemini
           settings: |
             {
-              "model": { "id": "gemini-2.5-flash" }
+              "model": { "id": "gemini-3.5-flash" }
             }
           prompt: |
             Read AGENTS.md at the repository root and follow it strictly -- it is this repository's non-negotiable governance law.
@@ -124,15 +127,16 @@ jobs:
             Record every commit in Team/CHANGELOG.md with its real short hash and push directly to main.
 
       # =========================================================================
-      # TIER 4: Account 4 (Fallback if Account 3 fails)
+      # TIER 4: Account 4 (Fallback — only if Accounts 1-3 did NOT succeed)
       # =========================================================================
-      - name: Reset Tree on Account 3 Failure
-        if: failure()
+      - name: Reset Tree Before Account 4
+        if: steps.acc1.outcome != 'success' && steps.acc2.outcome != 'success' && steps.acc3.outcome != 'success'
         run: git reset --hard HEAD; git clean -fd
 
       - name: Run Gemini CLI (Account 4 - Fallback)
-        if: failure()
         id: acc4
+        if: steps.acc1.outcome != 'success' && steps.acc2.outcome != 'success' && steps.acc3.outcome != 'success'
+        continue-on-error: true
         uses: google-github-actions/run-gemini-cli@v0
         env:
           GEMINI_CLI_TRUST_WORKSPACE: 'true'
@@ -143,7 +147,7 @@ jobs:
           workflow_name: control-gemini
           settings: |
             {
-              "model": { "id": "gemini-2.5-flash" }
+              "model": { "id": "gemini-3.5-flash" }
             }
           prompt: |
             Read AGENTS.md at the repository root and follow it strictly -- it is this repository's non-negotiable governance law.
@@ -153,15 +157,16 @@ jobs:
             Record every commit in Team/CHANGELOG.md with its real short hash and push directly to main.
 
       # =========================================================================
-      # TIER 5: Account 5 (Fallback if Account 4 fails)
+      # TIER 5: Account 5 (Fallback — only if Accounts 1-4 did NOT succeed)
       # =========================================================================
-      - name: Reset Tree on Account 4 Failure
-        if: failure()
+      - name: Reset Tree Before Account 5
+        if: steps.acc1.outcome != 'success' && steps.acc2.outcome != 'success' && steps.acc3.outcome != 'success' && steps.acc4.outcome != 'success'
         run: git reset --hard HEAD; git clean -fd
 
       - name: Run Gemini CLI (Account 5 - Fallback)
-        if: failure()
         id: acc5
+        if: steps.acc1.outcome != 'success' && steps.acc2.outcome != 'success' && steps.acc3.outcome != 'success' && steps.acc4.outcome != 'success'
+        continue-on-error: true
         uses: google-github-actions/run-gemini-cli@v0
         env:
           GEMINI_CLI_TRUST_WORKSPACE: 'true'
@@ -172,7 +177,7 @@ jobs:
           workflow_name: control-gemini
           settings: |
             {
-              "model": { "id": "gemini-2.5-flash" }
+              "model": { "id": "gemini-3.5-flash" }
             }
           prompt: |
             Read AGENTS.md at the repository root and follow it strictly -- it is this repository's non-negotiable governance law.
@@ -182,15 +187,16 @@ jobs:
             Record every commit in Team/CHANGELOG.md with its real short hash and push directly to main.
 
       # =========================================================================
-      # TIER 6: Account 6 (Fallback if Account 5 fails)
+      # TIER 6: Account 6 (Fallback — only if Accounts 1-5 did NOT succeed)
       # =========================================================================
-      - name: Reset Tree on Account 5 Failure
-        if: failure()
+      - name: Reset Tree Before Account 6
+        if: steps.acc1.outcome != 'success' && steps.acc2.outcome != 'success' && steps.acc3.outcome != 'success' && steps.acc4.outcome != 'success' && steps.acc5.outcome != 'success'
         run: git reset --hard HEAD; git clean -fd
 
       - name: Run Gemini CLI (Account 6 - Fallback)
-        if: failure()
         id: acc6
+        if: steps.acc1.outcome != 'success' && steps.acc2.outcome != 'success' && steps.acc3.outcome != 'success' && steps.acc4.outcome != 'success' && steps.acc5.outcome != 'success'
+        continue-on-error: true
         uses: google-github-actions/run-gemini-cli@v0
         env:
           GEMINI_CLI_TRUST_WORKSPACE: 'true'
@@ -201,7 +207,7 @@ jobs:
           workflow_name: control-gemini
           settings: |
             {
-              "model": { "id": "gemini-2.5-flash" }
+              "model": { "id": "gemini-3.5-flash" }
             }
           prompt: |
             Read AGENTS.md at the repository root and follow it strictly -- it is this repository's non-negotiable governance law.
@@ -211,15 +217,16 @@ jobs:
             Record every commit in Team/CHANGELOG.md with its real short hash and push directly to main.
 
       # =========================================================================
-      # TIER 7: Account 7 (Fallback if Account 6 fails)
+      # TIER 7: Account 7 (Fallback — only if Accounts 1-6 did NOT succeed)
       # =========================================================================
-      - name: Reset Tree on Account 6 Failure
-        if: failure()
+      - name: Reset Tree Before Account 7
+        if: steps.acc1.outcome != 'success' && steps.acc2.outcome != 'success' && steps.acc3.outcome != 'success' && steps.acc4.outcome != 'success' && steps.acc5.outcome != 'success' && steps.acc6.outcome != 'success'
         run: git reset --hard HEAD; git clean -fd
 
       - name: Run Gemini CLI (Account 7 - Fallback)
-        if: failure()
         id: acc7
+        if: steps.acc1.outcome != 'success' && steps.acc2.outcome != 'success' && steps.acc3.outcome != 'success' && steps.acc4.outcome != 'success' && steps.acc5.outcome != 'success' && steps.acc6.outcome != 'success'
+        continue-on-error: true
         uses: google-github-actions/run-gemini-cli@v0
         env:
           GEMINI_CLI_TRUST_WORKSPACE: 'true'
@@ -230,7 +237,7 @@ jobs:
           workflow_name: control-gemini
           settings: |
             {
-              "model": { "id": "gemini-2.5-flash" }
+              "model": { "id": "gemini-3.5-flash" }
             }
           prompt: |
             Read AGENTS.md at the repository root and follow it strictly -- it is this repository's non-negotiable governance law.
@@ -240,15 +247,16 @@ jobs:
             Record every commit in Team/CHANGELOG.md with its real short hash and push directly to main.
 
       # =========================================================================
-      # TIER 8: Account 8 (Fallback if Account 7 fails)
+      # TIER 8: Account 8 (Last Resort — only if Accounts 1-7 did NOT succeed)
       # =========================================================================
-      - name: Reset Tree on Account 7 Failure
-        if: failure()
+      - name: Reset Tree Before Account 8
+        if: steps.acc1.outcome != 'success' && steps.acc2.outcome != 'success' && steps.acc3.outcome != 'success' && steps.acc4.outcome != 'success' && steps.acc5.outcome != 'success' && steps.acc6.outcome != 'success' && steps.acc7.outcome != 'success'
         run: git reset --hard HEAD; git clean -fd
 
-      - name: Run Gemini CLI (Account 8 - Fallback)
-        if: failure()
+      - name: Run Gemini CLI (Account 8 - Last Resort)
         id: acc8
+        if: steps.acc1.outcome != 'success' && steps.acc2.outcome != 'success' && steps.acc3.outcome != 'success' && steps.acc4.outcome != 'success' && steps.acc5.outcome != 'success' && steps.acc6.outcome != 'success' && steps.acc7.outcome != 'success'
+        continue-on-error: true
         uses: google-github-actions/run-gemini-cli@v0
         env:
           GEMINI_CLI_TRUST_WORKSPACE: 'true'
@@ -259,7 +267,7 @@ jobs:
           workflow_name: control-gemini
           settings: |
             {
-              "model": { "id": "gemini-2.5-flash" }
+              "model": { "id": "gemini-3.5-flash" }
             }
           prompt: |
             Read AGENTS.md at the repository root and follow it strictly -- it is this repository's non-negotiable governance law.
@@ -267,6 +275,24 @@ jobs:
             Perform the task requested in the triggering issue or comment.
             Ensure all tests and verification gates (python Tools/run_gates.py) pass with zero errors.
             Record every commit in Team/CHANGELOG.md with its real short hash and push directly to main.
+
+      # =========================================================================
+      # FINAL GATE: Hard fail if all 8 accounts exhausted
+      # =========================================================================
+      - name: All Accounts Exhausted — Hard Fail
+        if: |
+          always() &&
+          steps.acc1.outcome != 'success' &&
+          steps.acc2.outcome != 'success' &&
+          steps.acc3.outcome != 'success' &&
+          steps.acc4.outcome != 'success' &&
+          steps.acc5.outcome != 'success' &&
+          steps.acc6.outcome != 'success' &&
+          steps.acc7.outcome != 'success' &&
+          steps.acc8.outcome != 'success'
+        run: |
+          echo "❌ All 8 API key tiers exhausted. Check quota and secrets." >&2
+          exit 1
 
       # Summary
       - name: Report Fallback Execution Summary
@@ -277,11 +303,12 @@ jobs:
           if [ -n "${{ github.event.issue.number }}" ]; then
             echo "- **Issue Number:** #${{ github.event.issue.number }}" >> $GITHUB_STEP_SUMMARY
           fi
-          echo "- **Account 1 Outcome:** ${{ steps.acc1.outcome }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Account 2 Outcome:** ${{ steps.acc2.outcome || 'skipped' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Account 3 Outcome:** ${{ steps.acc3.outcome || 'skipped' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Account 4 Outcome:** ${{ steps.acc4.outcome || 'skipped' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Account 5 Outcome:** ${{ steps.acc5.outcome || 'skipped' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Account 6 Outcome:** ${{ steps.acc6.outcome || 'skipped' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Account 7 Outcome:** ${{ steps.acc7.outcome || 'skipped' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Account 8 Outcome:** ${{ steps.acc8.outcome || 'skipped' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Model Used:** gemini-3.5-flash" >> $GITHUB_STEP_SUMMARY
+          echo "- **Account 1:** ${{ steps.acc1.outcome || 'skipped' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Account 2:** ${{ steps.acc2.outcome || 'skipped' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Account 3:** ${{ steps.acc3.outcome || 'skipped' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Account 4:** ${{ steps.acc4.outcome || 'skipped' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Account 5:** ${{ steps.acc5.outcome || 'skipped' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Account 6:** ${{ steps.acc6.outcome || 'skipped' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Account 7:** ${{ steps.acc7.outcome || 'skipped' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Account 8:** ${{ steps.acc8.outcome || 'skipped' }}" >> $GITHUB_STEP_SUMMARY
