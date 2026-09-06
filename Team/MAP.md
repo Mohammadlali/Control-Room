@@ -26,6 +26,9 @@
   - `control-agy.yml`: AGY bot listening for `@agy` mentions on Issues and Issue comments.
   - Cross-repo dispatch to `Mohammadlali/agw-workers`.
   - Authenticated Git operations enabled via `CONTROL_ROOM_PAT` for direct main delivery.
+  - `batch-dispatch.yml`: 99-slot round-robin dispatch across 9 accounts.
+  - Pre-push git hook (`.githooks/pre-push`) for offline gate enforcement.
+  - Comprehensive user & agent guide in `Team/START_HERE.md` (Issue #11).
 
 ---
 

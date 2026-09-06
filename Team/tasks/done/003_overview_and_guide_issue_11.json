@@ -1,0 +1,13 @@
+{
+  "id": "003",
+  "assigned_to": "AGY Bot",
+  "title": "Comprehensive Repository Overview & Guide (Issue #11)",
+  "question": "Is the repository comprehensively documented with operational guidance for users to effectively utilize Control-Room and AGY?",
+  "falsifiable_by": "python Tools/run_gates.py exits with code 0 and zero output.",
+  "touches": [
+    "Team/START_HERE.md",
+    "Team/WHERE_WE_ARE.md",
+    "Team/MAP.md",
+    "Team/CHANGELOG.md"
+  ]
+}
