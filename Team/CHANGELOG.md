@@ -87,3 +87,8 @@ Exempt: commits dedicated solely to recording the changelog (`changelog: record 
   - **Git Push Auth for AGY:** Added CONTROL_ROOM_PAT secret to Build prompt step so AGY receives authenticated git clone URL and can push commits back to Control-Room.
   - **Impact:** AGY can now make real code changes, commit, and push to main — not just read and report.
 
+- `3d4b1e3`
+  - **Status & Map Refresh (Issue #10):** Synchronized `WHERE_WE_ARE.md` and `MAP.md` with today's operational status, documenting the complete migration to AGY bot, active cross-repo dispatching, authenticated git push capabilities, and moved initial scaffolding task to done.
+  - **Impact:** Living documentation accurately reflects current AGY capabilities and infrastructure state; zero information loss for incoming sessions.
+
+
