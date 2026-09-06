@@ -51,3 +51,11 @@ Exempt: commits dedicated solely to recording the changelog (`changelog: record 
   - **Switch to AGY:** Replaced broken `gemini-cli` bot with `control-agy.yml` using AGY CLI via cross-repo dispatch to `Mohammadlali/agw-workers`; deleted `control-gemini.yml`.
   - **Impact:** Bot no longer depends on Gemini API quota; uses 9 AGY OAuth tokens from the worker fleet instead.
 
+- `f22c4b7`
+  - **CHANGELOG Catch-up:** Recorded commits 1d4dad2, 699e633, e824308, e928bf2 that were missing from CHANGELOG.
+  - **Impact:** check_changelog gate passes.
+
+- `91c843f`
+  - **Workflow if-condition Fix:** Replaced `if: >-` multi-line block with single-line `${{ }}` format for the agy-bot job condition.
+  - **Impact:** GitHub Actions parser correctly evaluates the condition; fixes workflow not triggering on issues.
+
