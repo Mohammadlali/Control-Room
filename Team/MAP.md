@@ -11,7 +11,7 @@
 |------------|--------|---------------|-------------|
 | 1. Control-Room Core & Gates | ACTIVE | Local / Antigravity | `mohammadlali0707-stack/Control-Room` |
 | 2. Cloud Runner Workflows | READY | GitHub Actions | `mohammadlali0707-stack/agw-workers` |
-| 3. Project Portfolios (LifeOS & AirboxVIP) | PENDING INTEGRATION | TBD | Account 07 Repos |
+| 3. Project Portfolios (AirboxVIP) | PENDING INTEGRATION | TBD | Account 07 Repos |
 
 ---
 
@@ -32,5 +32,5 @@
 ---
 
 ## 3. Project Integrations
-- LifeOS: Scaffolding documentation, proposal tracking, and automated reporting.
 - AirboxVIP_Coffeenet: Telegram bot service management and content generation jobs.
+
