@@ -41,9 +41,9 @@ jobs:
         with:
           python-version: '3.11'
 
-      # Intelligent 8-Account Pool & Health Check Resolver
-      - name: Select Active Gemini API Key (8-Account Pool)
-        id: select_key
+      # Intelligent 8-Account Pool & Live Model Quota Resolver
+      - name: Resolve Active Key and Working Model
+        id: resolver
         env:
           K1: ${{ secrets.GEMINI_API_KEY_1 }}
           K2: ${{ secrets.GEMINI_API_KEY_2 }}
@@ -58,6 +58,7 @@ jobs:
           import os
           import sys
           import urllib.request
+          import urllib.error
           import json
           import random
 
@@ -71,40 +72,69 @@ jobs:
               print("::error::No GEMINI_API_KEY secrets configured (checked 1-8).")
               sys.exit(1)
 
-          # Test keys in randomized order to distribute load and avoid premature quota burns
+          # Candidate models in priority order: Flash models have active free quotas on AI Studio
+          CANDIDATE_MODELS = [
+              "gemini-2.5-flash",
+              "gemini-2.0-flash",
+              "gemini-1.5-flash",
+              "gemini-2.5-pro",
+              "gemini-1.5-pro"
+          ]
+
+          # Randomize keys to balance daily load
           indices = list(keys.keys())
           random.shuffle(indices)
 
-          selected_idx = None
+          selected_acc = None
           selected_key = None
+          selected_model = None
 
-          print(f"Checking health across {len(keys)} available Gemini accounts...")
+          print(f"Probing {len(keys)} accounts across candidate models for active quota...")
+          payload = json.dumps({"contents": [{"parts": [{"text": "ping"}]}]}).encode("utf-8")
+
           for idx in indices:
               key = keys[idx]
-              url = f"https://generativelanguage.googleapis.com/v1beta/models?key={key}&pageSize=1"
-              try:
-                  req = urllib.request.Request(url, headers={"User-Agent": "Control-Room-Resolver"})
-                  with urllib.request.urlopen(req, timeout=8) as response:
-                      if response.status == 200:
-                          selected_idx = idx
-                          selected_key = key
-                          print(f"-> Account {idx}: Healthy (HTTP 200). Selected as active key.")
-                          break
-              except Exception as e:
-                  print(f"-> Account {idx}: Check failed ({e}). Trying next fallback account...")
+              print(f"\nEvaluating Account #{idx}...")
+              for model in CANDIDATE_MODELS:
+                  url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
+                  req = urllib.request.Request(
+                      url,
+                      data=payload,
+                      headers={"Content-Type": "application/json", "User-Agent": "Control-Room-Bot"}
+                  )
+                  try:
+                      with urllib.request.urlopen(req, timeout=8) as response:
+                          if response.status == 200:
+                              selected_acc = idx
+                              selected_key = key
+                              selected_model = model
+                              print(f"-> SUCCESS: Account #{idx} passed health check with model '{model}' (HTTP 200)!")
+                              break
+                  except urllib.error.HTTPError as e:
+                      err_body = e.read().decode("utf-8", "replace")[:120]
+                      print(f"   Model '{model}': HTTP {e.code} - {err_body}")
+                  except Exception as e:
+                      print(f"   Model '{model}': error {e}")
+
+              if selected_key:
+                  break
 
           if not selected_key:
-              print("::warning::All live health checks failed or timed out. Defaulting to Account 1 as fallback.")
-              selected_idx = 1
+              print("::warning::No candidate model returned 200. Falling back to Account 1 with gemini-2.5-flash.")
+              selected_acc = 1
               selected_key = keys.get(1) or list(keys.values())[0]
+              selected_model = "gemini-2.5-flash"
 
-          # Export selected key securely to environment for subsequent steps
+          print(f"\nFinal Selection: Account #{selected_acc} using model '{selected_model}'")
+
           with open(os.environ["GITHUB_ENV"], "a") as env_file:
               env_file.write(f"ACTIVE_GEMINI_KEY={selected_key}\n")
-              env_file.write(f"ACTIVE_ACCOUNT_INDEX={selected_idx}\n")
+              env_file.write(f"ACTIVE_GEMINI_MODEL={selected_model}\n")
+              env_file.write(f"ACTIVE_ACCOUNT_INDEX={selected_acc}\n")
 
           with open(os.environ["GITHUB_OUTPUT"], "a") as out_file:
-              out_file.write(f"acc_idx={selected_idx}\n")
+              out_file.write(f"acc_idx={selected_acc}\n")
+              out_file.write(f"model={selected_model}\n")
           EOF
 
       - name: Run Gemini CLI Assistant
@@ -118,7 +148,7 @@ jobs:
           workflow_name: control-gemini
           settings: |
             {
-              "model": { "maxSessionTurns": 150 }
+              "model": "${{ env.ACTIVE_GEMINI_MODEL }}"
             }
           prompt: |
             Read AGENTS.md at the repository root and follow it strictly -- it is this repository's non-negotiable governance law.
@@ -131,7 +161,8 @@ jobs:
         if: always()
         run: |
           echo "### 🤖 Gemini Bot Execution Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- **Active Account Used:** Account #${{ steps.select_key.outputs.acc_idx }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Active Account Used:** Account #${{ steps.resolver.outputs.acc_idx }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Active Model Used:** \`${{ steps.resolver.outputs.model }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Trigger Event:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
           if [ -n "${{ github.event.issue.number }}" ]; then
             echo "- **Issue Number:** #${{ github.event.issue.number }}" >> $GITHUB_STEP_SUMMARY
