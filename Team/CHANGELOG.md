@@ -102,3 +102,7 @@ Exempt: commits dedicated solely to recording the changelog (`changelog: record 
 - `4a04519`
   - **Onboarding Guide Enrichment & Architecture Alignment (Issue #11):** Added practical prompt patterns, verification gates philosophy (Silent Pass, No Claim Without a Probe), and end-to-end request lifecycle diagram to `Team/START_HERE.md`; updated `README.md` architecture to reflect all active workflows (`control-agy.yml`, `batch-dispatch.yml`, `control-gates.yml`) and Persian onboarding links; initialized `Team/tasks/pending/.gitkeep`.
   - **Impact:** Provides operators and developers with actionable templates to immediately assign tasks to AGY Bot; aligns documentation tree with actual repo infrastructure.
+
+- `92be0b1`
+  - **FAQ Reference & Empirical Verification Report (Issue #11):** Added FAQ and quick reference table to `Team/START_HERE.md`, linked empirical verification report `Team/reports/003_issue_11_verification.md` in task 003 touches, and validated gate execution.
+  - **Impact:** Solidifies operational onboarding with clear answers to frequent questions; establishes empirical proof of task completion in standardized test reports.
