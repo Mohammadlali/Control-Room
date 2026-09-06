@@ -59,7 +59,7 @@ Exempt: commits dedicated solely to recording the changelog (`changelog: record 
   - **Workflow if-condition Fix:** Replaced `if: >-` multi-line block with single-line `${{ }}` format for the agy-bot job condition.
   - **Impact:** GitHub Actions parser correctly evaluates the condition; fixes workflow not triggering on issues.
 
-- `TBD_NEXT`
+- `39966bf`
   - **YAML Quote Fix:** Quoted `concurrency.group` value containing `${{ }}`; added `type: string` to workflow_dispatch input.
   - **Impact:** Fixes GitHub strict YAML parser rejecting the workflow (was showing file path instead of workflow name).
 
