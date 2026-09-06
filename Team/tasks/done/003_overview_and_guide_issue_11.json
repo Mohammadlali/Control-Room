@@ -5,6 +5,7 @@
   "question": "Is the repository comprehensively documented with operational guidance for users to effectively utilize Control-Room and AGY?",
   "falsifiable_by": "python Tools/run_gates.py exits with code 0 and zero output.",
   "touches": [
+    "README.md",
     "Team/START_HERE.md",
     "Team/WHERE_WE_ARE.md",
     "Team/MAP.md",
