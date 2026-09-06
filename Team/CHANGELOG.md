@@ -31,6 +31,11 @@ Exempt: commits dedicated solely to recording the changelog (`changelog: record 
   - **8-Tier Sequential Fallback:** Implemented native GitHub Actions fallback cascade across all 8 accounts with clean tree resets on quota limits.
   - **Impact:** Guarantees that if any account exhausts daily quota, the next account automatically takes over until execution succeeds.
 
+- `a37f152`
+  - **Model Schema Alignment:** Fixed `settings.json` model definition from string to object format `{"id": "gemini-2.5-flash"}` as required by `gemini-cli` v0.26+.
+  - **Impact:** Resolves schema validator rejection `Error in: model. Expected object, received string`.
+
+
 
 
 
