@@ -83,7 +83,7 @@ Exempt: commits dedicated solely to recording the changelog (`changelog: record 
   - **Context-embedded Prompt:** Sanitizes and embeds AGENTS.md and WHERE_WE_ARE.md directly into AGY prompt. Instructs AGY not to clone or access external repos.
   - **Impact:** Eliminates 5-minute timeout caused by AGY attempting to clone Control-Room without credentials.
 
-- `TBD_PAT`
+- `87657cc`
   - **Git Push Auth for AGY:** Added CONTROL_ROOM_PAT secret to Build prompt step so AGY receives authenticated git clone URL and can push commits back to Control-Room.
   - **Impact:** AGY can now make real code changes, commit, and push to main — not just read and report.
 
