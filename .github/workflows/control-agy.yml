@@ -44,31 +44,36 @@ jobs:
           REPO="mohammadlali0707-stack/Control-Room"
           RAW_TITLE="${{ github.event.issue.title }}"
           SAFE_TITLE=$(printf '%s' "$RAW_TITLE" | tr -d '`"\\$')
+          RAW_BODY="${{ github.event.issue.body }}"
+          SAFE_BODY=$(printf '%s' "$RAW_BODY" | sed "s/\`/'/g; s/\"/'/g")
+
+          # Sanitize files: remove chars that break bash double-quoted strings
+          sanitize_file() {
+            sed "s/\`/'/g; s/\"/'/g; s/\$(/DOLLAR(/g; s/\${/DOLLAR{/g"
+          }
+          AGENTS=$(cat AGENTS.md 2>/dev/null | sanitize_file || echo "(not found)")
+          WHERE=$(cat Team/WHERE_WE_ARE.md 2>/dev/null | sanitize_file || echo "(not found)")
+
           {
-            echo "You are an AI coding agent. Complete a GitHub task for repository $REPO."
+            echo "You are an AI assistant for the $REPO GitHub repository."
+            echo "Respond to the issue below. Use ONLY the provided context — do NOT clone or access external repos."
             echo ""
-            echo "STEP 1: Clone the repository"
-            echo "  git clone https://github.com/$REPO.git /tmp/cr"
-            echo "  cd /tmp/cr"
+            echo "--- AGENTS.md (governance rules) ---"
+            echo "$AGENTS"
             echo ""
-            echo "STEP 2: Read governance rules"
-            echo "  cat AGENTS.md"
-            echo "  cat Team/WHERE_WE_ARE.md"
-            echo "  cat Team/MAP.md"
+            echo "--- WHERE_WE_ARE.md (current project state) ---"
+            echo "$WHERE"
             echo ""
-            echo "STEP 3: Complete this task from issue $ISSUE_NUM"
-            echo "  Title: $SAFE_TITLE"
+            echo "--- ISSUE #$ISSUE_NUM: $SAFE_TITLE ---"
+            echo "$SAFE_BODY"
             echo ""
-            echo "STEP 4: Verify all gates pass"
-            echo "  python Tools/run_gates.py"
-            echo ""
-            echo "STEP 5: Record in CHANGELOG and push"
-            echo "  Add commit hash to Team/CHANGELOG.md"
-            echo "  git push origin main"
-            echo ""
-            echo "STEP 6: Write a plain-English summary of exactly what you did."
+            echo "--- YOUR RESPONSE ---"
+            echo "Write a clear, helpful reply to this issue based on the context above."
+            echo "If code changes are needed, describe them clearly."
+            echo "End with: DONE."
           } > /tmp/prompt.txt
           echo "Prompt ready: $(wc -l < /tmp/prompt.txt) lines"
+          head -5 /tmp/prompt.txt
 
       - name: Dispatch to agw-workers
         id: dispatch
