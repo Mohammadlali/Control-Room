@@ -24,9 +24,10 @@ permissions:
 
 jobs:
   gemini-bot:
-    if: |
+    if: >-
       github.event_name == 'workflow_dispatch' ||
-      contains(github.event.comment.body || github.event.issue.body, '@gemini-cli')
+      contains(github.event.issue.body, '@gemini-cli') ||
+      contains(github.event.comment.body, '@gemini-cli')
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
