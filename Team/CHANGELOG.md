@@ -27,6 +27,11 @@ Exempt: commits dedicated solely to recording the changelog (`changelog: record 
   - **Live Model Quota Resolver:** Added live probing across candidate models (`gemini-2.5-flash`, `gemini-2.0-flash`, `gemini-1.5-flash`, `gemini-2.5-pro`) to ensure selection of an account and model with verified quota.
   - **Impact:** Fixed HTTP 429 limit:0 error caused by default model selection.
 
+- `a504a4f`
+  - **8-Tier Sequential Fallback:** Implemented native GitHub Actions fallback cascade across all 8 accounts with clean tree resets on quota limits.
+  - **Impact:** Guarantees that if any account exhausts daily quota, the next account automatically takes over until execution succeeds.
+
+
 
 
 
