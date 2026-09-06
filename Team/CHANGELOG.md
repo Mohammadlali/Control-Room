@@ -10,3 +10,8 @@ Exempt: commits dedicated solely to recording the changelog (`changelog: record 
 - `371278e`
   - **Initial commit:** Auto-initialized repository on GitHub.
   - **Impact:** Baseline `main` branch created for `mohammadlali0707-stack/Control-Room`.
+
+- `1003f4d`
+  - **Core Scaffolding:** Established AGENTS.md, Team/ coordination core, Tools/ gate suite, and GitHub Actions CI.
+  - **Impact:** Control-Room is fully initialized with living documentation and mechanical verification rules.
+
