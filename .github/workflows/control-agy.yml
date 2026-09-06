@@ -89,13 +89,27 @@ jobs:
         id: dispatch
         env:
           GH_TOKEN: ${{ secrets.MOHAMMADLALI_PAT }}
+          ISSUE_NUM: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}
         run: |
+          # Read acc_index from issue label agy-acc:N (set by batch-dispatch.yml)
+          # Falls back to 0 (random) for manual issues without the label
+          ACC_LABEL=$(gh issue view "$ISSUE_NUM" --repo "$REPO" --json labels \
+            -q '.labels[].name' | grep '^agy-acc:' | head -1 || echo "")
+          if [ -n "$ACC_LABEL" ]; then
+            ACC_INDEX="${ACC_LABEL#agy-acc:}"
+            echo "Using labeled acc_index=$ACC_INDEX"
+          else
+            ACC_INDEX="0"
+            echo "No agy-acc label, using random acc_index"
+          fi
+
           PROMPT=$(cat /tmp/prompt.txt)
           gh workflow run agw-worker.yml \
             --repo Mohammadlali/agw-workers \
             --field "prompt=$PROMPT" \
-            --field "acc_index=0" \
-            --field "callback_id=cr-${{ github.event.issue.number }}-${{ github.run_id }}"
+            --field "acc_index=$ACC_INDEX" \
+            --field "callback_id=cr-$ISSUE_NUM-${{ github.run_id }}"
           sleep 10
           RUN_ID=$(gh run list \
             --repo Mohammadlali/agw-workers \
@@ -104,7 +118,7 @@ jobs:
             --json databaseId \
             -q '.[0].databaseId')
           echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
-          echo "Dispatched: $RUN_ID"
+          echo "Dispatched: $RUN_ID (acc=$ACC_INDEX)"
 
       - name: Wait for worker
         env:

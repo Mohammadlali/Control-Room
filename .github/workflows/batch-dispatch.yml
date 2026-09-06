@@ -1,0 +1,88 @@
+name: AGY Batch Dispatch
+
+on:
+  workflow_dispatch:
+    inputs:
+      tasks:
+        description: 'Newline-separated task list (one task per line)'
+        required: true
+        type: string
+
+permissions:
+  issues: write
+  contents: write
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.CONTROL_ROOM_PAT }}
+
+      - name: Round-robin dispatch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          git config user.email "agy-batch@control-room.local"
+          git config user.name "AGY Batch Bot"
+
+          STATE_FILE="Team/.agy-dispatch-state.json"
+
+          # Read current slot (default -1 so first task gets slot 0 = acc1)
+          if [ -f "$STATE_FILE" ]; then
+            SLOT=$(grep -oP '"last_slot"\s*:\s*\K-?[0-9]+' "$STATE_FILE" | head -1 || echo "-1")
+          else
+            SLOT=-1
+          fi
+          echo "Resuming from slot $SLOT"
+
+          TASK_COUNT=0
+          ACC_INDEX=1
+          RUNNER=1
+
+          # Write tasks to temp file to avoid subshell issues
+          printf '%s' '${{ inputs.tasks }}' > /tmp/tasks.txt
+
+          while IFS= read -r TASK; do
+            [ -z "$(printf '%s' "$TASK" | tr -d ' \t')" ] && continue
+
+            SLOT=$(( (SLOT + 1) % 99 ))
+            ACC_INDEX=$(( (SLOT % 9) + 1 ))
+            RUNNER=$(( SLOT / 9 + 1 ))
+
+            echo ">>> slot=$SLOT acc=$ACC_INDEX runner=$RUNNER | $TASK"
+
+            # Ensure label exists
+            gh label create "agy-acc:$ACC_INDEX" \
+              --color "0075ca" \
+              --description "AGY account $ACC_INDEX" 2>/dev/null || true
+
+            # Open the issue
+            ISSUE_URL=$(gh issue create \
+              --title "$TASK" \
+              --body "@agy $TASK")
+            ISSUE_NUM=$(echo "$ISSUE_URL" | grep -oP '[0-9]+$')
+            gh issue edit "$ISSUE_NUM" --add-label "agy-acc:$ACC_INDEX" 2>/dev/null || true
+            echo "Created: $ISSUE_URL (acc=$ACC_INDEX)"
+
+            # Persist state
+            NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+            printf '{"last_slot":%d,"updated_at":"%s"}\n' "$SLOT" "$NOW" > "$STATE_FILE"
+            git add "$STATE_FILE"
+            git commit -m "changelog: record batch-dispatch slot $SLOT acc$ACC_INDEX"
+            git push origin main
+
+            TASK_COUNT=$((TASK_COUNT + 1))
+            sleep 5
+
+          done < /tmp/tasks.txt
+
+          echo ""
+          echo "=== Batch complete: $TASK_COUNT issues dispatched. Last: slot=$SLOT acc${ACC_INDEX} runner${RUNNER} ==="
+          echo "## AGY Batch Dispatch Complete" >> $GITHUB_STEP_SUMMARY
+          echo "- **Issues dispatched:** $TASK_COUNT" >> $GITHUB_STEP_SUMMARY
+          echo "- **Last slot:** $SLOT — acc${ACC_INDEX}, runner${RUNNER}" >> $GITHUB_STEP_SUMMARY

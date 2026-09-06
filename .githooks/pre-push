@@ -1,0 +1,26 @@
+﻿#!/bin/sh
+# Control-Room pre-push hook — runs all gates before every push.
+# Install once per clone: git config core.hooksPath .githooks
+
+echo "[pre-push] Running Control-Room gates..."
+
+if command -v python3 >/dev/null 2>&1; then
+  PYTHON=python3
+elif command -v python >/dev/null 2>&1; then
+  PYTHON=python
+else
+  echo "[pre-push] WARNING: python not found, skipping gates."
+  exit 0
+fi
+
+$PYTHON Tools/run_gates.py
+EXIT=$?
+
+if [ $EXIT -ne 0 ]; then
+  echo ""
+  echo "[pre-push] BLOCKED: Gates failed. Fix issues before pushing."
+  exit 1
+fi
+
+echo "[pre-push] All gates passed. Proceeding with push."
+exit 0
