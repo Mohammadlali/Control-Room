@@ -10,10 +10,11 @@ on:
       prompt:
         description: 'Manual prompt for AGY'
         required: false
-        default: 'Read AGENTS.md, check Team/WHERE_WE_ARE.md, and report project status.'
+        type: string
+        default: 'Read AGENTS.md and report current project status.'
 
 concurrency:
-  group: agy-${{ github.event.issue.number || github.run_id }}
+  group: "agy-${{ github.event.issue.number || github.run_id }}"
   cancel-in-progress: false
 
 permissions:
