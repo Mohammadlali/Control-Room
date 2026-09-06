@@ -1,0 +1,12 @@
+{
+  "id": "002",
+  "assigned_to": "AGY Bot",
+  "title": "Update WHERE_WE_ARE.md with today's status (Issue #10)",
+  "question": "Are WHERE_WE_ARE.md and MAP.md synchronized with current AGY bot and repository operational status?",
+  "falsifiable_by": "python Tools/run_gates.py exits with code 0 and zero output.",
+  "touches": [
+    "Team/WHERE_WE_ARE.md",
+    "Team/MAP.md",
+    "Team/CHANGELOG.md"
+  ]
+}
