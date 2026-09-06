@@ -35,8 +35,19 @@ Exempt: commits dedicated solely to recording the changelog (`changelog: record 
   - **Model Schema Alignment:** Fixed `settings.json` model definition from string to object format `{"id": "gemini-2.5-flash"}` as required by `gemini-cli` v0.26+.
   - **Impact:** Resolves schema validator rejection `Error in: model. Expected object, received string`.
 
+- `1d4dad2`
+  - **Gemini Model Upgrade + Fallback Logic Fix:** Upgraded all 8 tiers from `gemini-2.5-flash` to `gemini-3.5-flash`; replaced broken `if: failure()` cascade with `continue-on-error: true` + outcome-based conditions.
+  - **Impact:** Prevents all 8 tiers from firing simultaneously when Tier 1 succeeds.
 
+- `699e633`
+  - **Trigger Condition Fix:** Corrected broken `contains(A || B, '@gemini-cli')` expression by splitting into two separate `contains()` calls.
+  - **Impact:** Bot now correctly triggers on both new issues and comments mentioning `@gemini-cli`.
 
+- `e824308`
+  - **GEMINI_MODEL Env Var:** Added `GEMINI_MODEL: gemini-3.5-flash` directly to `env:` block of all 8 tiers after discovering the `settings` JSON input was silently ignored by the action.
+  - **Impact:** Ensures all accounts use `gemini-3.5-flash` instead of defaulting to `gemini-3.1-pro`.
 
-
+- `e928bf2`
+  - **Switch to AGY:** Replaced broken `gemini-cli` bot with `control-agy.yml` using AGY CLI via cross-repo dispatch to `Mohammadlali/agw-workers`; deleted `control-gemini.yml`.
+  - **Impact:** Bot no longer depends on Gemini API quota; uses 9 AGY OAuth tokens from the worker fleet instead.
 
