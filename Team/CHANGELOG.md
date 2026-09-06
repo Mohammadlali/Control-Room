@@ -67,7 +67,7 @@ Exempt: commits dedicated solely to recording the changelog (`changelog: record 
   - **Full Workflow Rewrite:** Stripped all complex YAML constructs to fix persistent YAML parse error.
   - **Impact:** GitHub now correctly identifies and loads `Control-Room AGY Issue Bot` workflow.
 
-- `TBD_PROMPT_FIX`
+- `1b9ac11`
   - **Bash-safe Prompt:** Replaced direct AGENTS.md embedding with a heredoc that tells AGY to clone and read files itself. Avoids triple-backtick command substitution crash in agw-worker.yml.
   - **Impact:** AGY no longer crashes on prompt injection of AGENTS.md content.
 
