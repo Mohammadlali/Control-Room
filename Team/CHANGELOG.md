@@ -19,4 +19,9 @@ Exempt: commits dedicated solely to recording the changelog (`changelog: record 
   - **Scope Refinement:** Removed LifeOS references from workstream map and status records.
   - **Impact:** Aligned tracked project portfolios with current active focus.
 
+- `b65e0e2`
+  - **Gemini Issue Bot:** Integrated official `google-github-actions/run-gemini-cli` with an 8-account health-check pool and load balancing.
+  - **Impact:** Enabled automated resolution of GitHub Issues tagged with `@gemini-cli` across 8 fallback accounts.
+
+
 
