@@ -68,6 +68,10 @@ Exempt: commits dedicated solely to recording the changelog (`changelog: record 
   - **Impact:** GitHub now correctly identifies and loads `Control-Room AGY Issue Bot` workflow.
 
 - `1b9ac11`
-  - **Bash-safe Prompt:** Replaced direct AGENTS.md embedding with a heredoc that tells AGY to clone and read files itself. Avoids triple-backtick command substitution crash in agw-worker.yml.
-  - **Impact:** AGY no longer crashes on prompt injection of AGENTS.md content.
+  - **Bash-safe Prompt:** Replaced direct AGENTS.md embedding with a heredoc approach.
+  - **Impact:** Avoided backtick command substitution crash from AGENTS.md content.
+
+- `63e00fa`
+  - **YAML Parse Fix (heredoc):** Replaced heredoc (content at column 0 was truncating `run: |` block) with indented `echo` commands inside a subshell redirect.
+  - **Impact:** Eliminates the persistent YAML parse error; workflow will now show proper name and trigger on issues.
 
