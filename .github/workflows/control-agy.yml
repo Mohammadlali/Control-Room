@@ -39,6 +39,8 @@ jobs:
 
       - name: Build safe prompt
         id: prompt
+        env:
+          CTRL_TOKEN: ${{ secrets.CONTROL_ROOM_PAT }}
         run: |
           ISSUE_NUM="${{ github.event.issue.number }}"
           REPO="mohammadlali0707-stack/Control-Room"
@@ -55,25 +57,33 @@ jobs:
           WHERE=$(cat Team/WHERE_WE_ARE.md 2>/dev/null | sanitize_file || echo "(not found)")
 
           {
-            echo "You are an AI assistant for the $REPO GitHub repository."
-            echo "Respond to the issue below. Use ONLY the provided context — do NOT clone or access external repos."
+            echo "You are an AI coding assistant working on the $REPO GitHub repository."
+            echo "All necessary context and credentials are provided below."
             echo ""
-            echo "--- AGENTS.md (governance rules) ---"
+            echo "=== GIT SETUP (run this first) ==="
+            echo "git clone https://x-access-token:$CTRL_TOKEN@github.com/$REPO.git /tmp/cr"
+            echo "cd /tmp/cr"
+            echo "git config user.email 'agy-bot@control-room.local'"
+            echo "git config user.name 'AGY Bot'"
+            echo ""
+            echo "=== AGENTS.md (governance — follow strictly) ==="
             echo "$AGENTS"
             echo ""
-            echo "--- WHERE_WE_ARE.md (current project state) ---"
+            echo "=== WHERE_WE_ARE.md (current project state) ==="
             echo "$WHERE"
             echo ""
-            echo "--- ISSUE #$ISSUE_NUM: $SAFE_TITLE ---"
+            echo "=== TASK — Issue #$ISSUE_NUM: $SAFE_TITLE ==="
             echo "$SAFE_BODY"
             echo ""
-            echo "--- YOUR RESPONSE ---"
-            echo "Write a clear, helpful reply to this issue based on the context above."
-            echo "If code changes are needed, describe them clearly."
-            echo "End with: DONE."
+            echo "=== REQUIRED STEPS ==="
+            echo "1. Clone the repo using the GIT SETUP command above."
+            echo "2. Complete the task described in the issue."
+            echo "3. Run: python Tools/run_gates.py (all gates must pass)."
+            echo "4. Add an entry to Team/CHANGELOG.md with the real short commit hash."
+            echo "5. Push: git push origin main"
+            echo "6. End your response with a plain-English summary of exactly what you did."
           } > /tmp/prompt.txt
           echo "Prompt ready: $(wc -l < /tmp/prompt.txt) lines"
-          head -5 /tmp/prompt.txt
 
       - name: Dispatch to agw-workers
         id: dispatch
