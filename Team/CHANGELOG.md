@@ -15,3 +15,8 @@ Exempt: commits dedicated solely to recording the changelog (`changelog: record 
   - **Core Scaffolding:** Established AGENTS.md, Team/ coordination core, Tools/ gate suite, and GitHub Actions CI.
   - **Impact:** Control-Room is fully initialized with living documentation and mechanical verification rules.
 
+- `373d29a`
+  - **Scope Refinement:** Removed LifeOS references from workstream map and status records.
+  - **Impact:** Aligned tracked project portfolios with current active focus.
+
+
