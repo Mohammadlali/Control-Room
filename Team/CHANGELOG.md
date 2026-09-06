@@ -47,13 +47,17 @@ Exempt: commits dedicated solely to recording the changelog (`changelog: record 
   - **GEMINI_MODEL Env Var:** Added `GEMINI_MODEL: gemini-3.5-flash` directly to `env:` block of all 8 tiers after discovering the `settings` JSON input was silently ignored by the action.
   - **Impact:** Ensures all accounts use `gemini-3.5-flash` instead of defaulting to `gemini-3.1-pro`.
 
-- `e928bf2`
-  - **Switch to AGY:** Replaced broken `gemini-cli` bot with `control-agy.yml` using AGY CLI via cross-repo dispatch to `Mohammadlali/agw-workers`; deleted `control-gemini.yml`.
-  - **Impact:** Bot no longer depends on Gemini API quota; uses 9 AGY OAuth tokens from the worker fleet instead.
+- `16db43b`
+  - **Round-Robin Batch Dispatch + Git Hooks:** Added `batch-dispatch.yml` (99-slot round-robin: 9 accounts x 11 runners, 5s stagger). Updated `control-agy.yml` to read `agy-acc:N` label for deterministic account selection. Initialized `Team/.agy-dispatch-state.json`. Added `.githooks/pre-push` (fail-hard gate enforcement, token-free, systematic).
+  - **Impact:** Multiple AGY tasks dispatch in parallel with deterministic account assignment. Gates enforced before every push via git hook — no token cost.
 
 - `f22c4b7`
   - **CHANGELOG Catch-up:** Recorded commits 1d4dad2, 699e633, e824308, e928bf2 that were missing from CHANGELOG.
   - **Impact:** check_changelog gate passes.
+
+- `e928bf2`
+  - **Switch to AGY:** Replaced broken `gemini-cli` bot with `control-agy.yml` using AGY CLI via cross-repo dispatch to `Mohammadlali/agw-workers`; deleted `control-gemini.yml`.
+  - **Impact:** Bot no longer depends on Gemini API quota; uses 9 AGY OAuth tokens from the worker fleet instead.
 
 - `91c843f`
   - **Workflow if-condition Fix:** Replaced `if: >-` multi-line block with single-line `${{ }}` format for the agy-bot job condition.
