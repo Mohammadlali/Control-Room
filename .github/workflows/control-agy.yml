@@ -37,28 +37,43 @@ jobs:
             --repo "${{ github.repository }}" \
             --body "🤖 **AGY is on it.** Will reply when done."
 
-      - name: Build prompt file
+      - name: Build safe prompt
+        id: prompt
         run: |
-          {
-            echo "=== GOVERNANCE ==="
-            cat AGENTS.md 2>/dev/null || true
-            echo ""
-            echo "=== STATE ==="
-            cat Team/WHERE_WE_ARE.md 2>/dev/null || true
-            echo ""
-            echo "=== TASK ==="
-            echo "Issue: ${{ github.event.issue.title }}"
-            echo "${{ github.event.issue.body }}"
-            echo "${{ github.event.comment.body }}"
-            echo ""
-            echo "=== RULES ==="
-            echo "1. Do the task."
-            echo "2. Run python Tools/run_gates.py — must pass."
-            echo "3. Record commits in Team/CHANGELOG.md."
-            echo "4. Push to main."
-            echo "5. End with a plain-English summary."
-          } > /tmp/prompt.txt
-          wc -l /tmp/prompt.txt
+          ISSUE_NUM="${{ github.event.issue.number }}"
+          REPO="mohammadlali0707-stack/Control-Room"
+
+          # Sanitize title: strip chars that break bash double-quoted strings
+          RAW_TITLE="${{ github.event.issue.title }}"
+          SAFE_TITLE=$(printf '%s' "$RAW_TITLE" | tr -d '`"\\$')
+
+          # Write prompt using heredoc - no special chars can break this
+          cat > /tmp/prompt.txt << HEREDOC
+You are an AI coding agent. Complete a GitHub task for repository $REPO.
+
+STEP 1: Clone the repository
+  git clone https://github.com/$REPO.git /tmp/cr
+  cd /tmp/cr
+
+STEP 2: Read governance rules
+  cat AGENTS.md
+  cat Team/WHERE_WE_ARE.md
+  cat Team/MAP.md
+
+STEP 3: Complete this task from issue $ISSUE_NUM
+  Title: $SAFE_TITLE
+
+STEP 4: Verify all gates pass
+  python Tools/run_gates.py
+
+STEP 5: Record in CHANGELOG and push
+  Add the commit hash to Team/CHANGELOG.md
+  git push origin main
+
+STEP 6: Write a plain-English summary of exactly what you did.
+HEREDOC
+
+          echo "Prompt file written ($(wc -l < /tmp/prompt.txt) lines)"
 
       - name: Dispatch to agw-workers
         id: dispatch

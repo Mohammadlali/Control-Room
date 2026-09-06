@@ -63,3 +63,11 @@ Exempt: commits dedicated solely to recording the changelog (`changelog: record 
   - **YAML Quote Fix:** Quoted `concurrency.group` value containing `${{ }}`; added `type: string` to workflow_dispatch input.
   - **Impact:** Fixes GitHub strict YAML parser rejecting the workflow (was showing file path instead of workflow name).
 
+- `0a437d4`
+  - **Full Workflow Rewrite:** Stripped all complex YAML constructs to fix persistent YAML parse error.
+  - **Impact:** GitHub now correctly identifies and loads `Control-Room AGY Issue Bot` workflow.
+
+- `TBD_PROMPT_FIX`
+  - **Bash-safe Prompt:** Replaced direct AGENTS.md embedding with a heredoc that tells AGY to clone and read files itself. Avoids triple-backtick command substitution crash in agw-worker.yml.
+  - **Impact:** AGY no longer crashes on prompt injection of AGENTS.md content.
+
