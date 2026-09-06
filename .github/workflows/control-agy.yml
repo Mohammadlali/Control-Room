@@ -22,10 +22,7 @@ permissions:
 
 jobs:
   agy-bot:
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      contains(github.event.issue.body, '@agy') ||
-      contains(github.event.comment.body, '@agy')
+    if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.issue.body, '@agy') || contains(github.event.comment.body, '@agy') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
