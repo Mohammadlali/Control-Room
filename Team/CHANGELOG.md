@@ -40,5 +40,11 @@ All commits must be recorded here. Exempt: commits dedicated solely to recording
 - `d01df33`
   - **Analysis Methodology & Source Quality Gate (Issue #19):** Added Analysis Methodology — Cross-Reference Requirement to `AGENTS.md`, created `Tools/check_source_quality.py` gate requiring git hash reference in `Team/WHERE_WE_ARE.md`, and integrated into `Tools/run_gates.py`.
   - **Impact:** Enforces empirical ground-truth verification and mechanical gating against unverified claims in living documentation.
+- `bbf4237`
+  - **AGY double-trigger prevention:** Scoped `issue_comment` trigger condition in `control-agy.yml` to comment body only and excluded bot comments (`github.event.comment.user.type != 'Bot'`).
+  - **Impact:** Prevents redundant and infinite bot execution loops when AGY or GitHub Actions posts automated comments.
+- `7c9f22f`
+  - **AGY structured planning & reporting format:** Mandated STEP 0 planning checklist comment and comprehensive final report format (with exact push lines, numbered empirical findings, and gate counts) in `control-agy.yml`.
+  - **Impact:** Guarantees transparent, falsifiable, and step-by-step verifiable reporting across all AGY issue runs.
 
 

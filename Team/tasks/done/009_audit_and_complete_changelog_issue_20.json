@@ -1,0 +1,12 @@
+{
+  "id": "009",
+  "assigned_to": "AGY Bot",
+  "title": "Audit and complete CHANGELOG for recent commits (Issue #20)",
+  "question": "Are unrecorded recent commits (bbf4237 and 7c9f22f) documented in Team/CHANGELOG.md with explanatory entries, and does run_gates.py report 5/5 gates passing?",
+  "falsifiable_by": "python Tools/run_gates.py exits with code 0 and zero output.",
+  "touches": [
+    "Team/CHANGELOG.md",
+    "Team/WHERE_WE_ARE.md",
+    "Team/MAP.md"
+  ]
+}

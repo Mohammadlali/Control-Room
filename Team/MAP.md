@@ -29,9 +29,12 @@
 - **Bot & Automation:**
   - `control-agy.yml`: AGY bot listening for `@agy` mentions on Issues and Issue comments.
   - All tasks routed and executed through AGY issues.
-  - Issues 1 through 19 fully resolved and addressed.
+  - Issues 1 through 20 fully resolved and addressed.
   - Bash injection resolved: issue body/title passed safely via environment variables (`e8b9e42`).
   - Sequential execution mode active (`EXECUTION MODE: sequential`), eliminating timeouts and preventing background subagents/tasks (`2408d7a`, Issue #16).
+  - Double-trigger prevention active: issue_comment trigger scoped to body only, excluding bot comments (`bbf4237`).
+  - Structured execution lifecycle active: STEP 0 planning checklist and comprehensive report structure with evidence and gate counts (`7c9f22f`).
+  - Changelog audit completed: all recent commits audited and documented in `Team/CHANGELOG.md` (Issue #20).
   - MCP Integration: Full operational access to Control-Room repository.
   - Authenticated Git operations enabled via `CONTROL_ROOM_PAT` for direct main delivery.
   - `batch-dispatch.yml`: 99-slot round-robin batch dispatch across 9 accounts ready.
