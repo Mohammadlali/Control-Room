@@ -51,31 +51,23 @@ jobs:
           EVENT="${{ github.event_name }}"
 
           if [ "$EVENT" = 'commit_comment' ]; then
-            COMMIT_INFO=$(curl -sf \
+            COMMIT_JSON=$(curl -sf \
               "https://api.github.com/repos/$REPO/commits/$COMMIT_SHA" \
-              -H "Authorization: Bearer $CTRL_TOKEN" | python3 -c "
-import json,sys
-try:
-    d=json.load(sys.stdin)
-    msg=d.get('commit',{}).get('message','(no message)')
-    files=[f['filename'] for f in d.get('files',[])]
-    st=d.get('stats',{})
-    print('Commit message:',msg)
-    print('Files changed:',', '.join(files[:15]))
-    print('Stats: +%s -%s'%(st.get('additions',0),st.get('deletions',0)))
-except Exception as e:
-    print('(could not fetch commit info):', e)
-" 2>/dev/null | sanitize || printf '%s' '(commit info unavailable)')
-            DIFF=$(git show "$COMMIT_SHA" --stat 2>/dev/null | head -30 | sanitize || printf '%s' '(diff unavailable)')
+              -H "Authorization: Bearer $CTRL_TOKEN" 2>/dev/null || echo '{}')
+            COMMIT_MSG=$(echo "$COMMIT_JSON" | jq -r '.commit.message // "(no message)"' 2>/dev/null | sanitize || echo '(unavailable)')
+            COMMIT_FILES=$(echo "$COMMIT_JSON" | jq -r '[.files[].filename] | join(", ")' 2>/dev/null | cut -c1-300 | sanitize || echo '(unavailable)')
+            COMMIT_STATS=$(echo "$COMMIT_JSON" | jq -r '"+\(.stats.additions) -\(.stats.deletions)"' 2>/dev/null | sanitize || echo '(unavailable)')
             CONTEXT_HEADER="commit $COMMIT_SHA"
-            CONTEXT_BODY="$COMMIT_INFO"
-            REPLY_INST="POST https://api.github.com/repos/$REPO/commits/$COMMIT_SHA/comments -- Header: Authorization: Bearer CTRL_TOKEN -- Body field: body"
+            CONTEXT_BODY=$(printf 'Commit: %s\nFiles: %s\nStats: %s' "$COMMIT_MSG" "$COMMIT_FILES" "$COMMIT_STATS")
+            REPLY_API="POST https://api.github.com/repos/$REPO/commits/$COMMIT_SHA/comments"
+            REPLY_BODY_HINT="Body JSON: {\"body\": \"<your answer>\"}"
           else
             SAFE_DT=$(printf '%s' "$DISCUSSION_TITLE" | sanitize)
             SAFE_DB=$(printf '%s' "$DISCUSSION_BODY" | sanitize)
             CONTEXT_HEADER="discussion #$DISCUSSION_NUM: $SAFE_DT"
             CONTEXT_BODY="$SAFE_DB"
-            REPLY_INST="POST https://api.github.com/graphql -- Header: Authorization: Bearer CTRL_TOKEN -- mutation addDiscussionComment(input:{discussionId:\"$DISCUSSION_NODE\",body:\"ANSWER\"})"
+            REPLY_API="POST https://api.github.com/graphql"
+            REPLY_BODY_HINT="mutation: addDiscussionComment(input:{discussionId:\"$DISCUSSION_NODE\",body:\"ANSWER\"})"
           fi
 
           {
@@ -94,24 +86,24 @@ except Exception as e:
             printf '%s\n' "$SAFE_COMMENT"
             printf '%s\n' ''
             printf '%s\n' '=== INSTRUCTIONS ==='
-            printf '%s\n' ''
             printf '%s\n' 'Determine which case applies:'
             printf '%s\n' ''
-            printf '%s\n' 'CASE A - User asks a question about the context:'
+            printf '%s\n' 'CASE A - User asks a QUESTION about the context:'
             printf '%s\n' '  1. Read context above carefully.'
-            printf '%s\n' '  2. Answer clearly in same language as question (Persian or English).'
-            printf '%s\n' '  3. Post answer via API:'
-            printf '%s\n' "  $REPLY_INST"
+            printf '%s\n' '  2. Answer in same language as the question (Persian or English).'
+            printf '%s\n' '  3. Post your answer:'
+            printf '     API: %s\n' "$REPLY_API"
+            printf '     Header: Authorization: Bearer CTRL_TOKEN\n'
+            printf '     %s\n' "$REPLY_BODY_HINT"
             printf '%s\n' '  4. Do NOT clone repo or run gates.'
             printf '%s\n' ''
-            printf '%s\n' 'CASE B - User requests a code change or action:'
-            printf '  1. POST https://api.github.com/repos/%s/issues\n' "$REPO"
-            printf '%s\n' '     Header: Authorization: Bearer CTRL_TOKEN'
-            printf '%s\n' '     Body: title (short descriptive title)'
-            printf '%s\n' '     Body: body starting with: @agy'
-            printf '%s\n' '     Then a newline and detailed task description.'
-            printf '%s\n' '  2. Post the new issue URL as a reply on this page.'
-            printf '%s\n' '  3. Do NOT do the actual work here. The issue bot will handle it.'
+            printf '%s\n' 'CASE B - User requests a code change or ACTION:'
+            printf '  1. Create issue: POST https://api.github.com/repos/%s/issues\n' "$REPO"
+            printf '%s\n' '     Authorization: Bearer CTRL_TOKEN'
+            printf '%s\n' '     title: clear descriptive title'
+            printf '%s\n' '     body: start with @agy on first line, then detailed task description'
+            printf '%s\n' '  2. Reply with the new issue URL.'
+            printf '%s\n' '  3. Do NOT do the actual work here.'
           } > /tmp/prompt.txt
           printf 'Prompt: %s lines\n' "$(wc -l < /tmp/prompt.txt)"
 
