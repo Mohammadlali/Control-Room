@@ -61,3 +61,50 @@ When any agent (AI or human) analyzes repository state and writes a report or is
 6. Archive gaps are active misinformation: if MAP.md omits context
    that MAP_ARCHIVE.md contains, the gap is not historical —
    it produces wrong conclusions for readers following AGENTS.md rule 2.
+
+---
+
+## Issue Response Protocol (Mandatory for ALL agents)
+
+Any agent (AGY, Claude, GPT, human, or any other) that processes an issue
+in this repository MUST follow this protocol. No exceptions.
+Enforced mechanically by `Tools/check_issue_protocol.py` gate.
+
+### BEFORE starting work
+Post a planning comment on the issue with a checklist:
+```
+### Working on it 🔴
+**Todo list**
+- [ ] Gather context and verify claims by measurement
+- [ ] Task 1: <specific sub-task>
+- [ ] Task 2: <specific sub-task>
+... (3-7 tasks total)
+- [ ] Run gates
+- [ ] Final consolidated report
+```
+Tick each checkbox (`- [ ]` → `- [x]`) immediately after completing that task.
+Do NOT wait until the end to tick all boxes at once.
+
+### AFTER completing all work
+Post a final report comment in this exact format:
+```
+**Done**
+
+**Push lines** (branch <branch>, target main):
+<exact output from git push>
+
+1. <Task name>
+   What you found, what you changed, why.
+   Evidence: commit hashes, file names, exact counts, run IDs.
+   No vague statements. Every claim must be verifiable.
+
+**Gate count, honestly:**
+X gates: X pass, 0 fail. (before this session: Y pass)
+```
+
+### NEVER
+- Claim a task is done without a commit hash or file proof
+- Tick a checkbox that was not actually completed
+- Skip the planning comment
+- Skip the final report
+- Write "fixed" or "done" without evidence
