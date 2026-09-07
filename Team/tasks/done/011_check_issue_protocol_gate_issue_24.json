@@ -10,6 +10,7 @@
     "Tools/run_gates.py",
     "Team/CHANGELOG.md",
     "Team/WHERE_WE_ARE.md",
-    "Team/MAP.md"
+    "Team/MAP.md",
+    "Team/reports/007_issue_24_verification.md"
   ]
 }
