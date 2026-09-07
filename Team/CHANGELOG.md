@@ -10,58 +10,27 @@ This file records every significant change with real commit hashes.
 - `87a85a8` — fix(hooks): mark .githooks/pre-push as executable (100755)
 - `a7c6d43` — fix(hooks): remove UTF-8 BOM from .githooks/pre-push
 - `e8b9e42` — fix: pass issue body/title via env vars - prevent bash backtick injection
-- `39acafa`
-  - **Pipeline Execution Fix Verification (Issue #16):** Verified sequential execution mode without subagent/task timeouts; created `Team/pipeline_test.md` and task 005.
-  - **Impact:** Confirms AGY bot pipeline executes cleanly and synchronously on GitHub Actions runner.
-- `09e0e6e`
-  - **Status & Map Refresh (Issue #17):** Updated `Team/WHERE_WE_ARE.md` and `Team/MAP.md` reflecting full AGY Issue Bot operational state, bash injection fix, sequential execution mode, verification gates suite, 99-slot batch dispatch, full MCP access, and closure of issues 1-16.
-  - **Impact:** Keeps living documentation synchronized with the current system state.
-- `01b27d5`
-  - **Switch project to Tehran City (Issue #18):** Updated `Team/MAP.md` and `Team/WHERE_WE_ARE.md` to remove all references to `AirboxVIP` and `LifeOS`, and registered `Tehran City (Game development project on Account 1997 repo)` under active project integrations.
-  - **Impact:** Aligns Control-Room tracking and next steps with Tehran City project development.
-- `d01df33`
-  - **Analysis Methodology & Source Quality Gate (Issue #19):** Added Analysis Methodology — Cross-Reference Requirement to `AGENTS.md`, created `Tools/check_source_quality.py` gate requiring git hash reference in `Team/WHERE_WE_ARE.md`, and integrated into `Tools/run_gates.py`.
-  - **Impact:** Enforces empirical ground-truth verification and mechanical gating against unverified claims in living documentation.
-- `bbf4237`
-  - **AGY double-trigger prevention:** Scoped `issue_comment` trigger condition in `control-agy.yml` to comment body only and excluded bot comments (`github.event.comment.user.type != 'Bot'`).
-  - **Impact:** Prevents redundant and infinite bot execution loops when AGY or GitHub Actions posts automated comments.
-- `7c9f22f`
-  - **AGY structured planning & reporting format:** Mandated STEP 0 planning checklist comment and comprehensive final report format (with exact push lines, numbered empirical findings, and gate counts) in `control-agy.yml`.
-  - **Impact:** Guarantees transparent, falsifiable, and step-by-step verifiable reporting across all AGY issue runs.
-- `9c0e385`
-  - **Audit and complete CHANGELOG for recent commits (Issue #20):** Audited git history and recorded missing commits `bbf4237` (double-trigger fix) and `7c9f22f` (planning checklist & reporting format), created task 009, and updated living documentation.
-  - **Impact:** Ensures 100% compliance with `check_changelog` verification gate and keeps living status fully synchronized.
-- `d1353eb`
-  - **Real-time checkbox tick via PATCH:** Updated `control-agy.yml` prompt to instruct AGY to capture comment ID after posting checklist and update each checkbox via `gh api PATCH` immediately after completing each step.
-  - **Impact:** Enables live progress visibility on GitHub issue checklist without requiring manual updates.
-- `082296c`
-  - **Fix: replace gh CLI with curl+token in prompt:** Replaced all `gh` CLI commands in the AGY prompt with `curl` + CTRL_TOKEN calls; added `export GH_TOKEN` and `export CTRL_TOKEN` to GIT SETUP. Root cause: agw-worker acc9 calls `gh` without `GH_TOKEN` before AGY runs, causing immediate exit code 1.
-  - **Impact:** Makes checklist posting and PATCH updates portable across all agw-worker accounts regardless of `GH_TOKEN` environment state.
-- `b9f2d83`
-  - **Issue Response Protocol in AGENTS.md (Issue #23):** Added `## Issue Response Protocol (Mandatory for ALL agents)` section to `AGENTS.md` requiring planning checklist before work and structured `**Done**` final report after. Enforced by `check_issue_protocol.py` gate.
-  - **Impact:** Rules are now repo-level, agent-agnostic — any agent reading AGENTS.md is bound by the protocol regardless of which machine or IDE they run on.
-- `040cde5`
-  - **New gate: check_issue_protocol.py (Issue #24):** Created `Tools/check_issue_protocol.py` that checks all @agy-mentioned issues closed in the last 7 days have a planning checklist comment and a final `**Done**` report. Offline-safe (exits 0 when gh CLI unavailable).
-  - **Impact:** Mechanically enforces Issue Response Protocol — any future session that closes an @agy issue without the required comments will fail the gate.
-- `007d3f2`
-  - **Probe for check_issue_protocol gate (Issue #24):** Created `Tools/probe_check_issue_protocol.py`.
-  - **Impact:** Enables automated validation of the new gate via the probe suite.
-- `ba56e78`
-  - **Wire check_issue_protocol into run_gates.py (Issue #24):** Added `check_issue_protocol` entry to GATES list in `Tools/run_gates.py`. Gate count: 5 → 6.
-  - **Impact:** Protocol compliance is now checked on every `python Tools/run_gates.py` run, closing issues #23 and #24.
-- `c3e46d2`
-  - **Prompt hardening (remove command substitutions):** Removed all bash command substitution patterns (`$(...)` and backticks) from prompt templates in `control-agy.yml` to prevent unintended shell evaluation in agw-worker runners.
-  - **Impact:** Eliminates arbitrary shell injection vectors in runner environments.
-- `13fb629`
-  - **Prompt format refactoring (heredoc):** Switched prompt generation to heredoc, eliminating double-quotes and escaping issues.
-  - **Impact:** Robust string handling during workflow dispatch.
-- `7cb6354`
-  - **Workflow printf formatting:** Switched prompt generation to `printf` with single-quoted static text in `control-agy.yml` to avoid heredoc YAML indentation conflicts.
-  - **Impact:** Ensures clean YAML parsing and eliminates injection vectors.
-- `6599040`
-  - **Verification test for Issue #25:** Created `Team/hello_test.md`, verified real-time checklist and report format protocol, recorded unrecorded commits `c3e46d2..7cb6354`, updated living documentation (`Team/WHERE_WE_ARE.md`, `Team/MAP.md`), and confirmed 6/6 gates passing.
-  - **Impact:** Confirms AGY Issue Bot executes safely and sequentially with live checklist updates after shell injection fix.
-- `a317416`
-  - **Persian summary report for Issue #25:** Created `Team/reports/005_issue_25_persian_summary.md` detailing all actions taken for Issue #25 and shell injection fix in Persian, updated `Team/WHERE_WE_ARE.md` and `Team/MAP.md`.
-  - **Impact:** Provides a clear, simple Persian summary for operators and users following the Issue Response Protocol.
-
+- `39acafa` — Pipeline Execution Fix Verification (Issue #16): verified sequential execution mode; created Team/pipeline_test.md and task 005.
+- `09e0e6e` — Status & Map Refresh (Issue #17): updated WHERE_WE_ARE.md and MAP.md.
+- `01b27d5` — Switch project to Tehran City (Issue #18): updated MAP.md and WHERE_WE_ARE.md.
+- `d01df33` — Analysis Methodology & Source Quality Gate (Issue #19): added cross-reference requirement to AGENTS.md, created check_source_quality.py.
+- `bbf4237` — AGY double-trigger prevention: scoped issue_comment trigger, excluded bot comments.
+- `7c9f22f` — AGY structured planning & reporting format: mandated STEP 0 checklist and final report in control-agy.yml.
+- `9c0e385` — Audit and complete CHANGELOG for recent commits (Issue #20).
+- `d1353eb` — Real-time checkbox tick via PATCH: added gh api PATCH instructions to prompt.
+- `082296c` — Fix: replace gh CLI with curl+token in prompt (portable across agw-worker accounts).
+- `b9f2d83` — Issue Response Protocol in AGENTS.md (Issue #23): added mandatory checklist + final report section.
+- `040cde5` — New gate: check_issue_protocol.py (Issue #24): enforces checklist + Done report on @agy issues.
+- `007d3f2` — Probe for check_issue_protocol gate (Issue #24).
+- `ba56e78` — Wire check_issue_protocol into run_gates.py (Issue #24). Gate count: 5 -> 6.
+- `edecf8f` — CHANGELOG: record d1353eb..ba56e78 (Issues #23, #24 completed directly).
+- `c3e46d2` — Fix: remove bash command substitution patterns from prompt (prevent shell injection in agw-worker).
+- `13fb629` — Fix: use heredoc for prompt (broken - YAML indentation issue).
+- `7cb6354` — Fix: use printf with single-quoted static text - no heredoc YAML issues, no double-quote injection.
+  - Root cause chain resolved: $(gh) -> $(curl) -> heredoc YAML break -> " in PROMPT string.
+  - Impact: AGY checklist + real-time ticking + final report fully operational (verified Issue #25).
+- `c865d33` — refactor: move Team/hello_test.md to Team/tests/ (cleanup).
+- `00bda18` — refactor: move Team/pipeline_test.md to Team/tests/ (cleanup).
+- `464067c` — refactor: delete Team/hello_test.md (original, now in Team/tests/).
+- `4487a58` — refactor: delete Team/pipeline_test.md (original, now in Team/tests/).
+  - Impact: Team/ root is clean. All test artifacts live in Team/tests/.
