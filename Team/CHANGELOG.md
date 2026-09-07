@@ -80,3 +80,8 @@ All commits must be recorded here. Exempt: commits dedicated solely to recording
   - **pre-push hook executable fix:** Set executable mode bit (100755) on `.githooks/pre-push`.
   - **Impact:** Git hook executes systematically without requiring manual chmod on new clones.
 
+- `a7c6d43`
+  - **pre-push hook shebang fix:** Removed UTF-8 BOM from `.githooks/pre-push`.
+  - **Impact:** Clean POSIX shell execution during git push without shebang parse errors.
+
+
