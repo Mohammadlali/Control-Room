@@ -13,6 +13,7 @@ Exit 1 = broken links found (prints report).
 import os
 import re
 import sys
+import urllib.parse
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -21,6 +22,12 @@ LINK_RE = re.compile(r'\[([^\]]+)\]\(([^)]+)\)')
 
 # Directories to skip entirely
 SKIP_DIRS = {'.git', 'node_modules', '.github'}
+
+# External schemes to skip
+EXTERNAL_SCHEMES = (
+    'http://', 'https://', 'mailto:', 'ftp://', 'tel:',
+    'javascript:', 'file://', 'conversation://', 'urn:'
+)
 
 
 def collect_md_files(root):
@@ -33,21 +40,43 @@ def collect_md_files(root):
 
 def check_file(md_path):
     broken = []
+    in_code_block = False
     with open(md_path, encoding='utf-8', errors='replace') as f:
         for lineno, line in enumerate(f, 1):
+            stripped = line.strip()
+            if stripped.startswith('```'):
+                in_code_block = not in_code_block
+                continue
+            if in_code_block:
+                continue
+
             for _, target in LINK_RE.findall(line):
+                target = target.strip()
+                # Handle optional title in link: [text](path "title") or [text](path 'title')
+                if ' ' in target:
+                    target = target.split(None, 1)[0]
                 # Strip anchor fragments
                 target = target.split('#')[0].strip()
-                # Skip external links, anchors-only, and empty
-                if not target or target.startswith('http') or target.startswith('mailto'):
+                # URL-decode path
+                target = urllib.parse.unquote(target)
+
+                # Skip external links, anchors-only, empty
+                if not target or target.startswith(EXTERNAL_SCHEMES):
                     continue
-                # Skip file:// absolute links (tooling artifacts)
-                if target.startswith('file://'):
-                    continue
-                # Resolve relative to the md file's directory
-                resolved = os.path.normpath(
-                    os.path.join(os.path.dirname(md_path), target)
-                )
+
+                # Check path resolution:
+                # 1. Relative to repo root if path starts with '/'
+                # 2. Relative to current file's directory
+                # 3. Fallback: relative to repo root
+                if target.startswith('/'):
+                    resolved = os.path.normpath(os.path.join(ROOT, target.lstrip('/')))
+                else:
+                    resolved = os.path.normpath(os.path.join(os.path.dirname(md_path), target))
+                    if not os.path.exists(resolved):
+                        resolved_root = os.path.normpath(os.path.join(ROOT, target))
+                        if os.path.exists(resolved_root):
+                            resolved = resolved_root
+
                 if not os.path.exists(resolved):
                     rel_md = os.path.relpath(md_path, ROOT)
                     broken.append(f'  {rel_md}:{lineno} -> {target}')

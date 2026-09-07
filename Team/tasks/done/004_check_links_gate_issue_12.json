@@ -1,0 +1,15 @@
+{
+  "id": "004",
+  "assigned_to": "AGY Bot",
+  "title": "Document Link Verification Gate (Issue #12)",
+  "question": "Does Tools/check_links.py validate internal documentation links and integrate cleanly into run_gates.py with zero-token silent pass?",
+  "falsifiable_by": "python Tools/run_gates.py exits with code 0 and zero output.",
+  "touches": [
+    "Tools/check_links.py",
+    "Tools/run_gates.py",
+    "Team/CHANGELOG.md",
+    "Team/MAP.md",
+    "Team/WHERE_WE_ARE.md",
+    "Team/reports/004_issue_12_verification.md"
+  ]
+}

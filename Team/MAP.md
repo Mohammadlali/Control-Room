@@ -21,6 +21,7 @@
   - `check_changelog.py`: Enforces 100% commit record compliance.
   - `poll_tasks.py`: Validates task format and `falsifiable_by` existence.
   - `verify_claims.py`: Validates file reference integrity in reports.
+  - `check_links.py`: Verifies internal document markdown links and paths.
   - `run_gates.py`: Master runner with zero-token silent pass.
 - **Bot & Automation:**
   - `control-agy.yml`: AGY bot listening for `@agy` mentions on Issues and Issue comments.
