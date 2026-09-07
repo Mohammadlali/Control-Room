@@ -12,6 +12,7 @@ If gh CLI unavailable or API unreachable: exit 0 silently (offline-safe).
 import subprocess
 import json
 import sys
+import os
 import re
 from datetime import datetime, timezone, timedelta
 
@@ -23,7 +24,10 @@ TODO_PATTERN = re.compile(r'Todo list|Working on it', re.IGNORECASE)
 
 
 def gh(cmd):
-    result = subprocess.run(['gh'] + cmd, capture_output=True, text=True)
+    env = dict(os.environ)
+    if 'GH_TOKEN' not in env and 'GITHUB_TOKEN' not in env and 'CTRL_TOKEN' in env:
+        env['GH_TOKEN'] = env['CTRL_TOKEN']
+    result = subprocess.run(['gh'] + cmd, capture_output=True, text=True, env=env)
     if result.returncode != 0:
         return None
     return result.stdout.strip()

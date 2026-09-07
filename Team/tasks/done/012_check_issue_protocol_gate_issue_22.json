@@ -1,0 +1,16 @@
+{
+  "id": "012",
+  "assigned_to": "AGY Bot",
+  "title": "Build check_issue_protocol.py gate for Issue Response Protocol (Issue #22)",
+  "question": "Does Tools/check_issue_protocol.py enforce checklist and final report comments on AGY issues closed in the last 7 days, with probe and integration in run_gates.py passing silently?",
+  "falsifiable_by": "python3 Tools/run_gates.py exits with 0 and python3 Tools/probe_check_issue_protocol.py returns pass status",
+  "touches": [
+    "Tools/check_issue_protocol.py",
+    "Tools/probe_check_issue_protocol.py",
+    "Tools/run_gates.py",
+    "Team/CHANGELOG.md",
+    "Team/WHERE_WE_ARE.md",
+    "Team/MAP.md",
+    "Team/reports/006_issue_22_verification.md"
+  ]
+}
