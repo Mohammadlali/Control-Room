@@ -30,6 +30,7 @@
   - `batch-dispatch.yml`: 99-slot round-robin dispatch across 9 accounts.
   - Pre-push git hook (`.githooks/pre-push`) for offline gate enforcement.
   - Comprehensive user & agent guide in `Team/START_HERE.md` (Issue #11).
+  - Pipeline execution verification & sequential mode stabilization documented in `Team/pipeline_test.md` (Issue #16).
 
 ---
 

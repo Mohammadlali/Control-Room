@@ -22,3 +22,9 @@ All commits must be recorded here. Exempt: commits dedicated solely to recording
 - `2408d7a`
   - **EXECUTION MODE prompt fix:** Added explicit sequential-execution instructions to AGY prompt. Prevents AGY from spawning subagents/background tasks/timers that caused timeout on issues #12 and #13.
   - **Impact:** AGY now runs all steps synchronously within the 5-minute window. All tasks (simple and complex) go through AGY issues.
+- `ed157b8` — docs: add comprehensive onboarding guide and update living state (Issue #11)
+- `4a04519` — docs: enrich onboarding guide with prompt patterns, lifecycle flow, and align README
+- `6dbe29f` — feat(gates): enhance check_links gate, record task 004 and update living state (Issue #12)
+- `87a85a8` — fix(hooks): mark .githooks/pre-push as executable (100755)
+- `a7c6d43` — fix(hooks): remove UTF-8 BOM from .githooks/pre-push
+- `e8b9e42` — fix: pass issue body/title via env vars - prevent bash backtick injection
