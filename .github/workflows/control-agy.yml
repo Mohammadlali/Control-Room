@@ -41,41 +41,27 @@ jobs:
         id: prompt
         env:
           CTRL_TOKEN: ${{ secrets.CONTROL_ROOM_PAT }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_NUM: ${{ github.event.issue.number }}
         run: |
-          ISSUE_NUM="${{ github.event.issue.number }}"
           REPO="mohammadlali0707-stack/Control-Room"
-          RAW_TITLE="${{ github.event.issue.title }}"
-          SAFE_TITLE=$(printf '%s' "$RAW_TITLE" | tr -d '`"\\$')
-          RAW_BODY="${{ github.event.issue.body }}"
-          SAFE_BODY=$(printf '%s' "$RAW_BODY" | sed "s/\`/'/g; s/\"/'/g")
-
-          sanitize_file() {
-            sed "s/\`/'/g; s/\"/'/g; s/\$(/DOLLAR(/g; s/\${/DOLLAR{/g"
-          }
+          SAFE_TITLE=$(printf '%s' "$ISSUE_TITLE" | tr -d '`"\\$')
+          SAFE_BODY=$(printf '%s' "$ISSUE_BODY" | sed "s/\`/'/g; s/\"/'/g; s/\$(/DOLLAR(/g; s/\${/DOLLAR{/g")
+          sanitize_file() { sed "s/\`/'/g; s/\"/'/g; s/\$(/DOLLAR(/g; s/\${/DOLLAR{/g"; }
           AGENTS=$(cat AGENTS.md 2>/dev/null | sanitize_file || echo "(not found)")
           WHERE=$(cat Team/WHERE_WE_ARE.md 2>/dev/null | sanitize_file || echo "(not found)")
-
           {
             echo "=== EXECUTION MODE (MANDATORY) ==="
-            echo "You are running inside a CI worker with a strict 5-minute wall-clock limit."
-            echo "RULES:"
-            echo "1. Execute ALL steps SEQUENTIALLY and SYNCHRONOUSLY."
-            echo "2. DO NOT spawn background tasks, subagents, timers, or parallel processes."
-            echo "3. DO NOT use invoke_subagent, schedule, or any deferred/async operation."
-            echo "4. Run each shell command, wait for it to complete, then proceed."
-            echo "5. If a step takes too long, simplify it. Never defer it to background."
+            echo "Run ALL steps SEQUENTIALLY. DO NOT spawn subagents, timers, or background tasks."
             echo ""
-            echo "=== CONTEXT ==="
-            echo "You are an AI coding assistant working on the $REPO GitHub repository."
-            echo "All necessary context and credentials are provided below."
-            echo ""
-            echo "=== GIT SETUP (run this first) ==="
+            echo "=== GIT SETUP ==="
             echo "git clone https://x-access-token:$CTRL_TOKEN@github.com/$REPO.git /tmp/cr"
             echo "cd /tmp/cr"
             echo "git config user.email 'agy-bot@control-room.local'"
             echo "git config user.name 'AGY Bot'"
             echo ""
-            echo "=== AGENTS.md (governance) ==="
+            echo "=== AGENTS.md ==="
             echo "$AGENTS"
             echo ""
             echo "=== WHERE_WE_ARE.md ==="
@@ -84,16 +70,15 @@ jobs:
             echo "=== TASK - Issue #$ISSUE_NUM: $SAFE_TITLE ==="
             echo "$SAFE_BODY"
             echo ""
-            echo "=== REQUIRED STEPS (execute in order, no skipping) ==="
-            echo "1. Clone the repo using the GIT SETUP command above."
-            echo "2. Complete the task described in the issue."
-            echo "3. Run: python Tools/run_gates.py (all gates must pass)."
-            echo "4. Add an entry to Team/CHANGELOG.md with the real short commit hash."
-            echo "5. git add -A && git commit -m 'your message' && git push origin main"
-            echo "6. Comment on issue #$ISSUE_NUM with: what you did and the commit hash."
-            echo "DO NOT wait for background processes. Execute each step and move on."
+            echo "=== REQUIRED STEPS ==="
+            echo "1. Clone repo via GIT SETUP above"
+            echo "2. Complete the task"
+            echo "3. Run: python Tools/run_gates.py"
+            echo "4. Add entry to Team/CHANGELOG.md with real commit hash"
+            echo "5. git add -A && git commit -m 'msg' && git push origin main"
+            echo "6. Comment on issue #$ISSUE_NUM with what you did and commit hash"
           } > /tmp/prompt.txt
-          echo "Prompt ready: $(wc -l < /tmp/prompt.txt) lines"
+          echo "Prompt: $(wc -l < /tmp/prompt.txt) lines"
 
       - name: Dispatch to agw-workers
         id: dispatch
@@ -104,14 +89,8 @@ jobs:
         run: |
           ACC_LABEL=$(gh issue view "$ISSUE_NUM" --repo "$REPO" --json labels \
             -q '.labels[].name' | grep '^agy-acc:' | head -1 || echo "")
-          if [ -n "$ACC_LABEL" ]; then
-            ACC_INDEX="${ACC_LABEL#agy-acc:}"
-            echo "Using labeled acc_index=$ACC_INDEX"
-          else
-            ACC_INDEX="0"
-            echo "No agy-acc label, using random acc_index"
-          fi
-
+          ACC_INDEX="0"
+          [ -n "$ACC_LABEL" ] && ACC_INDEX="${ACC_LABEL#agy-acc:}"
           PROMPT=$(cat /tmp/prompt.txt)
           gh workflow run agw-worker.yml \
             --repo Mohammadlali/agw-workers \
@@ -119,12 +98,8 @@ jobs:
             --field "acc_index=$ACC_INDEX" \
             --field "callback_id=cr-$ISSUE_NUM-${{ github.run_id }}"
           sleep 10
-          RUN_ID=$(gh run list \
-            --repo Mohammadlali/agw-workers \
-            --workflow agw-worker.yml \
-            --limit 1 \
-            --json databaseId \
-            -q '.[0].databaseId')
+          RUN_ID=$(gh run list --repo Mohammadlali/agw-workers \
+            --workflow agw-worker.yml --limit 1 --json databaseId -q '.[0].databaseId')
           echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
           echo "Dispatched: $RUN_ID (acc=$ACC_INDEX)"
 
@@ -134,32 +109,21 @@ jobs:
         run: |
           RID="${{ steps.dispatch.outputs.run_id }}"
           for i in $(seq 1 40); do
-            ST=$(gh run view "$RID" \
-              --repo Mohammadlali/agw-workers \
-              --json status -q '.status')
+            ST=$(gh run view "$RID" --repo Mohammadlali/agw-workers --json status -q '.status')
             echo "[$i/40] $ST"
             [ "$ST" = "completed" ] && break
             sleep 30
           done
 
       - name: Download result
-        id: result
         env:
           GH_TOKEN: ${{ secrets.MOHAMMADLALI_PAT }}
         run: |
           RID="${{ steps.dispatch.outputs.run_id }}"
           mkdir -p /tmp/agy-out
-          gh run download "$RID" \
-            --repo Mohammadlali/agw-workers \
-            --dir /tmp/agy-out 2>/dev/null || true
+          gh run download "$RID" --repo Mohammadlali/agw-workers --dir /tmp/agy-out 2>/dev/null || true
           OUT=$(find /tmp/agy-out -name "agy_output.txt" | head -1)
-          if [ -n "$OUT" ]; then
-            head -c 58000 "$OUT" > /tmp/final.txt
-            echo "found=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "(no output)" > /tmp/final.txt
-            echo "found=false" >> "$GITHUB_OUTPUT"
-          fi
+          [ -n "$OUT" ] && head -c 58000 "$OUT" > /tmp/final.txt || echo "(no output)" > /tmp/final.txt
 
       - name: Post result
         if: github.event_name != 'workflow_dispatch'
@@ -167,8 +131,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WORKER_RUN: ${{ steps.dispatch.outputs.run_id }}
         run: |
-          BODY=$(cat /tmp/final.txt)
-          RUN_URL="https://github.com/Mohammadlali/agw-workers/actions/runs/$WORKER_RUN"
           gh issue comment "${{ github.event.issue.number }}" \
             --repo "${{ github.repository }}" \
-            --body "AGY output: $BODY -- run: $RUN_URL"
+            --body "AGY output: $(cat /tmp/final.txt) -- run: https://github.com/Mohammadlali/agw-workers/actions/runs/$WORKER_RUN"
