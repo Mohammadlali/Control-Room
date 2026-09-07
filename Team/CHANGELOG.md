@@ -61,3 +61,7 @@ This file records every significant change with real commit hashes.
 - `6599040`
   - **Verification test for Issue #25:** Created `Team/hello_test.md`, verified real-time checklist and report format protocol, recorded unrecorded commits `c3e46d2..7cb6354`, updated living documentation (`Team/WHERE_WE_ARE.md`, `Team/MAP.md`), and confirmed 6/6 gates passing.
   - **Impact:** Confirms AGY Issue Bot executes safely and sequentially with live checklist updates after shell injection fix.
+- `a317416`
+  - **Persian summary report for Issue #25:** Created `Team/reports/005_issue_25_persian_summary.md` detailing all actions taken for Issue #25 and shell injection fix in Persian, updated `Team/WHERE_WE_ARE.md` and `Team/MAP.md`.
+  - **Impact:** Provides a clear, simple Persian summary for operators and users following the Issue Response Protocol.
+
