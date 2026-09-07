@@ -31,3 +31,6 @@ All commits must be recorded here. Exempt: commits dedicated solely to recording
 - `39acafa`
   - **Pipeline Execution Fix Verification (Issue #16):** Verified sequential execution mode without subagent/task timeouts; created `Team/pipeline_test.md` and task 005.
   - **Impact:** Confirms AGY bot pipeline executes cleanly and synchronously on GitHub Actions runner.
+- `09e0e6e`
+  - **Status & Map Refresh (Issue #17):** Updated `Team/WHERE_WE_ARE.md` and `Team/MAP.md` reflecting full AGY Issue Bot operational state, bash injection fix, sequential execution mode, verification gates suite, 99-slot batch dispatch, full MCP access, and closure of issues 1-16.
+  - **Impact:** Keeps living documentation synchronized with the current system state.
