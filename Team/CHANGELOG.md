@@ -44,3 +44,6 @@ This file records every significant change with real commit hashes.
 - `464067c` — refactor: delete Team/hello_test.md (original, now in Team/tests/).
 - `4487a58` — refactor: delete Team/pipeline_test.md (original, now in Team/tests/).
   - Impact: Team/ root is clean. All test artifacts live in Team/tests/.
+- `6d4f8c9` - feat: add control-agy-context.yml - context responder for commit and discussion comments.
+  - Triggers on commit_comment and discussion_comment events.
+  - CASE A: reads context, answers Q in-place. CASE B: creates issue with @agy for action requests.
