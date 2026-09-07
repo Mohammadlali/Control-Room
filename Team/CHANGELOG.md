@@ -56,6 +56,14 @@ All commits must be recorded here. Exempt: commits dedicated solely to recording
   - **Round-Robin Batch Dispatch + Git Hooks:** Added `batch-dispatch.yml` (99-slot round-robin: 9 accounts x 11 runners, 5s stagger). Updated `control-agy.yml` to read `agy-acc:N` label. Initialized `Team/.agy-dispatch-state.json`. Added `.githooks/pre-push` (fail-hard gate enforcement).
   - **Impact:** Multiple AGY tasks dispatch in parallel with deterministic account assignment. Gates enforced before every push via git hook.
 
+- `ed157b8`
+  - **Onboarding Guide & Living State Refresh (Issue #11):** Expanded `Team/START_HERE.md` with comprehensive repository overview, AGY bot invocation patterns, batch-dispatch architecture, task authoring rules, and synchronized `WHERE_WE_ARE.md` and `MAP.md` with current round-robin and hook infrastructure; added task 003.
+  - **Impact:** Users and incoming agents have an immediate, actionable guide on navigating and commanding Control-Room and dispatching jobs to AGY; living state reflects all operational mechanisms.
+
+- `4a04519`
+  - **Onboarding Guide Enrichment & Architecture Alignment (Issue #11):** Added practical prompt patterns, verification gates philosophy (Silent Pass, No Claim Without a Probe), and end-to-end request lifecycle diagram to `Team/START_HERE.md`; updated `README.md` architecture to reflect all active workflows (`control-agy.yml`, `batch-dispatch.yml`, `control-gates.yml`) and Persian onboarding links; initialized `Team/tasks/pending/.gitkeep`.
+  - **Impact:** Provides operators and developers with actionable templates to immediately assign tasks to AGY Bot; aligns documentation tree with actual repo infrastructure.
+
 - `92be0b1`
   - **FAQ & Verification Report (Issue #11):** AGY added FAQ reference and empirical verification report.
   - **Impact:** Documentation enriched with empirical evidence of AGY capabilities.
@@ -63,3 +71,7 @@ All commits must be recorded here. Exempt: commits dedicated solely to recording
 - `e064c77`
   - **check_links gate (Issue #12):** Added `Tools/check_links.py` — scans all .md files for broken internal file links (skips external URLs to avoid non-deterministic failures). Registered in `run_gates.py` as fourth gate.
   - **Impact:** Broken internal links now caught automatically before every push.
+
+- `6dbe29f`
+  - **check_links gate enhancement & verification (Issue #12):** Hardened `Tools/check_links.py` to support link titles, ignore code blocks, handle root-relative links, and unquote URLs. Added task 004 in `Team/tasks/done/` and empirical verification report `Team/reports/004_issue_12_verification.md`. Restored missing CHANGELOG commits `ed157b8` and `4a04519`.
+  - **Impact:** Robust documentation link verification gate protects against broken internal references; all verification gates pass silently with zero token consumption.
