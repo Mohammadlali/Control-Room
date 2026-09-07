@@ -1,0 +1,13 @@
+name: AGY Commit Context Test
+on:
+  commit_comment:
+    types: [created]
+permissions:
+  contents: read
+  issues: write
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    if: startsWith(github.event.comment.body, '@agy')
+    steps:
+      - run: echo triggered by commit comment
