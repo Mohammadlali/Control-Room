@@ -49,3 +49,12 @@ This file records every significant change with real commit hashes.
 - `ba56e78`
   - **Wire check_issue_protocol into run_gates.py (Issue #24):** Added `check_issue_protocol` entry to GATES list in `Tools/run_gates.py`. Gate count: 5 → 6.
   - **Impact:** Protocol compliance is now checked on every `python Tools/run_gates.py` run, closing issues #23 and #24.
+- `c3e46d2`
+  - **Prompt hardening (remove command substitutions):** Removed all bash command substitution patterns (`$(...)` and backticks) from prompt templates in `control-agy.yml` to prevent unintended shell evaluation in agw-worker runners.
+  - **Impact:** Eliminates arbitrary shell injection vectors in runner environments.
+- `13fb629`
+  - **Prompt format refactoring (heredoc):** Switched prompt generation to heredoc, eliminating double-quotes and escaping issues.
+  - **Impact:** Robust string handling during workflow dispatch.
+- `7cb6354`
+  - **Workflow printf formatting:** Switched prompt generation to `printf` with single-quoted static text in `control-agy.yml` to avoid heredoc YAML indentation conflicts.
+  - **Impact:** Ensures clean YAML parsing and eliminates injection vectors.

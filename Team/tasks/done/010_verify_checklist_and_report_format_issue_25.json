@@ -1,0 +1,14 @@
+{
+  "id": "010",
+  "assigned_to": "AGY Bot",
+  "title": "Verify checklist and report format works after shell injection fix (Issue #25)",
+  "question": "Does Team/hello_test.md contain 'Hello from AGY - test passed', does run_gates.py pass 6/6 gates, and are recent commits recorded in Team/CHANGELOG.md?",
+  "falsifiable_by": "test -f Team/hello_test.md && grep -q 'Hello from AGY - test passed' Team/hello_test.md && python3 Tools/run_gates.py exits with 0",
+  "touches": [
+    "Team/hello_test.md",
+    "Team/CHANGELOG.md",
+    "Team/WHERE_WE_ARE.md",
+    "Team/MAP.md",
+    "Team/tasks/done/010_verify_checklist_and_report_format_issue_25.json"
+  ]
+}
