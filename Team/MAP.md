@@ -23,7 +23,7 @@
   - `verify_claims.py`: Validates file reference integrity in reports.
   - `check_links.py`: Mechanically verifies internal document markdown links and paths.
   - `check_source_quality.py`: Verifies `Team/WHERE_WE_ARE.md` contains at least one git hash reference (Issue #19).
-  - `check_issue_protocol.py`: Mechanically checks planning checklist and `**Done**` report presence on closed @agy issues (Issues #22, #24).
+  - `check_issue_protocol.py`: Mechanically checks planning checklist and `**Done**` report presence on closed @agy issues (Issues #22, #24; reports `006`, `007`).
   - `run_gates.py`: Master runner with zero-token silent pass across all 6 gates.
 - **Governance & Analysis Methodology:**
   - `AGENTS.md`: Added Analysis Methodology — Cross-Reference Requirement rules (Issue #19) and Issue Response Protocol (Issue #23).

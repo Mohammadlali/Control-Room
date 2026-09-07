@@ -10,7 +10,7 @@
   - سوئیت گیت‌های خودکار (`run_gates.py` شامل ۶ گیت: `check_changelog.py`, `poll_tasks.py`, `verify_claims.py`, `check_links.py`, `check_source_quality.py`, `check_issue_protocol.py`) ۱۰۰٪ سبز و بدون خروجی (silent pass) فعال است.
   - گیت بررسی سلامت لینک‌های اسناد (`Tools/check_links.py`) از شکستن پیوندهای داخلی مارک‌داون جلوگیری می‌کند (Issue #12).
   - گیت بررسی کیفیت منبع (`Tools/check_source_quality.py`) وجود رفرنس هش گیت معتبر (حداقل ۷ کاراکتر hex) در `WHERE_WE_ARE.md` را به صورت مکانیکی تضمین می‌کند (Issue #19).
-  - گیت پروتکل پاسخ به ایشو (`Tools/check_issue_protocol.py`) وجود چک‌لیست برنامه‌ریزی زنده و گزارش نهایی ساختاریافته برای ایشوهای پردازش‌شده را مکانیکی بررسی می‌کند (`ba56e78`, Issues #22 و #24).
+  - گیت پروتکل پاسخ به ایشو (`Tools/check_issue_protocol.py`) وجود چک‌لیست برنامه‌ریزی زنده و گزارش نهایی ساختاریافته برای ایشوهای پردازش‌شده را مکانیکی بررسی می‌کند (`ba56e78`, Issues #22 و #24; گزارش تجربی 007 در `Team/reports/007_issue_24_verification.md`).
   - قوانین روش‌شناسی تحلیل و اعتبارسنجی متقابل (`Analysis Methodology — Cross-Reference Requirement`) در `AGENTS.md` اعمال شده است (Issue #19).
   - گیت‌ها در جریان CI (`control-gates.yml`) و پیش از هر پوش به صورت مکانیکی از طریق هوک پیش از پوش (`.githooks/pre-push`) اعمال می‌شوند.
 - **بات رسمی گیت‌هاب (AGY Issue Bot):**
@@ -44,4 +44,4 @@
   ```bash
   python Tools/run_gates.py
   ```
-- ثبت تمام کامیت‌ها در `Team/CHANGELOG.md` و همگام‌سازی بی‌درنگ اسناد زنده با رفرنس هش معتبر (`395be99`).
+- ثبت تمام کامیت‌ها در `Team/CHANGELOG.md` و همگام‌سازی بی‌درنگ اسناد زنده با رفرنس هش معتبر (`e29a713`).
