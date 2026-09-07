@@ -9,6 +9,7 @@ Requires gh CLI configured with GH_TOKEN.
 Pass: silent (exit 0). Fail: print violations, exit 1.
 If gh CLI unavailable or API unreachable: exit 0 silently (offline-safe).
 """
+import os
 import subprocess
 import json
 import sys
@@ -24,9 +25,12 @@ TODO_PATTERN = re.compile(r'Todo list|Working on it', re.IGNORECASE)
 
 
 def gh(cmd):
-    env = dict(os.environ)
-    if 'GH_TOKEN' not in env and 'GITHUB_TOKEN' not in env and 'CTRL_TOKEN' in env:
-        env['GH_TOKEN'] = env['CTRL_TOKEN']
+    env = os.environ.copy()
+    if 'GH_TOKEN' not in env:
+        for k in ['GITHUB_TOKEN', 'CTRL_TOKEN', 'CONTROL_ROOM_PAT']:
+            if os.environ.get(k):
+                env['GH_TOKEN'] = os.environ[k]
+                break
     result = subprocess.run(['gh'] + cmd, capture_output=True, text=True, env=env)
     if result.returncode != 0:
         return None
