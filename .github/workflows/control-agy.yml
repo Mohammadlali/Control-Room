@@ -49,7 +49,6 @@ jobs:
           RAW_BODY="${{ github.event.issue.body }}"
           SAFE_BODY=$(printf '%s' "$RAW_BODY" | sed "s/\`/'/g; s/\"/'/g")
 
-          # Sanitize files: remove chars that break bash double-quoted strings
           sanitize_file() {
             sed "s/\`/'/g; s/\"/'/g; s/\$(/DOLLAR(/g; s/\${/DOLLAR{/g"
           }
@@ -57,6 +56,16 @@ jobs:
           WHERE=$(cat Team/WHERE_WE_ARE.md 2>/dev/null | sanitize_file || echo "(not found)")
 
           {
+            echo "=== EXECUTION MODE (MANDATORY) ==="
+            echo "You are running inside a CI worker with a strict 5-minute wall-clock limit."
+            echo "RULES:"
+            echo "1. Execute ALL steps SEQUENTIALLY and SYNCHRONOUSLY."
+            echo "2. DO NOT spawn background tasks, subagents, timers, or parallel processes."
+            echo "3. DO NOT use invoke_subagent, schedule, or any deferred/async operation."
+            echo "4. Run each shell command, wait for it to complete, then proceed."
+            echo "5. If a step takes too long, simplify it. Never defer it to background."
+            echo ""
+            echo "=== CONTEXT ==="
             echo "You are an AI coding assistant working on the $REPO GitHub repository."
             echo "All necessary context and credentials are provided below."
             echo ""
@@ -66,22 +75,23 @@ jobs:
             echo "git config user.email 'agy-bot@control-room.local'"
             echo "git config user.name 'AGY Bot'"
             echo ""
-            echo "=== AGENTS.md (governance — follow strictly) ==="
+            echo "=== AGENTS.md (governance) ==="
             echo "$AGENTS"
             echo ""
-            echo "=== WHERE_WE_ARE.md (current project state) ==="
+            echo "=== WHERE_WE_ARE.md ==="
             echo "$WHERE"
             echo ""
-            echo "=== TASK — Issue #$ISSUE_NUM: $SAFE_TITLE ==="
+            echo "=== TASK - Issue #$ISSUE_NUM: $SAFE_TITLE ==="
             echo "$SAFE_BODY"
             echo ""
-            echo "=== REQUIRED STEPS ==="
+            echo "=== REQUIRED STEPS (execute in order, no skipping) ==="
             echo "1. Clone the repo using the GIT SETUP command above."
             echo "2. Complete the task described in the issue."
             echo "3. Run: python Tools/run_gates.py (all gates must pass)."
             echo "4. Add an entry to Team/CHANGELOG.md with the real short commit hash."
-            echo "5. Push: git push origin main"
-            echo "6. End your response with a plain-English summary of exactly what you did."
+            echo "5. git add -A && git commit -m 'your message' && git push origin main"
+            echo "6. Comment on issue #$ISSUE_NUM with: what you did and the commit hash."
+            echo "DO NOT wait for background processes. Execute each step and move on."
           } > /tmp/prompt.txt
           echo "Prompt ready: $(wc -l < /tmp/prompt.txt) lines"
 
@@ -92,8 +102,6 @@ jobs:
           ISSUE_NUM: ${{ github.event.issue.number }}
           REPO: ${{ github.repository }}
         run: |
-          # Read acc_index from issue label agy-acc:N (set by batch-dispatch.yml)
-          # Falls back to 0 (random) for manual issues without the label
           ACC_LABEL=$(gh issue view "$ISSUE_NUM" --repo "$REPO" --json labels \
             -q '.labels[].name' | grep '^agy-acc:' | head -1 || echo "")
           if [ -n "$ACC_LABEL" ]; then
