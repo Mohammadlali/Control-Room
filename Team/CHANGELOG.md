@@ -64,3 +64,7 @@ This file records every significant change with real commit hashes.
   - Discussion tab now supported: post @agy comment in any Discussion to trigger AGY.
 - `0776697` - fix: workflow posts AGY output to Discussion directly via GraphQL (no longer relies on AGY to call APIs).
 - `70b638f` - fix: remove double-quotes from prompt instructions - prevented bash parse error in agw-worker when prompt was injected via DOLLAR{{inputs.prompt}}.
+- `3810d40` - feat: add Tools/check_workflow_safety.py - static analysis gate 7 (no AI tokens, agent-agnostic). Checks: double-quotes in printf content, Python YAML indentation, YAML syntax.
+- `de38a36` - feat: add .githooks/pre-commit - runs check_workflow_safety before each commit.
+- `4781d62` - feat: add Tools/install_hooks.sh - one-command hook activation.
+- `3c065b7` - feat: register check_workflow_safety as gate 7 in run_gates.py.
