@@ -13,7 +13,6 @@ import os
 import subprocess
 import json
 import sys
-import os
 import re
 from datetime import datetime, timezone, timedelta
 
@@ -31,10 +30,13 @@ def gh(cmd):
             if os.environ.get(k):
                 env['GH_TOKEN'] = os.environ[k]
                 break
-    result = subprocess.run(['gh'] + cmd, capture_output=True, text=True, env=env)
-    if result.returncode != 0:
+    try:
+        result = subprocess.run(['gh'] + cmd, capture_output=True, text=True, env=env)
+        if result.returncode != 0:
+            return None
+        return result.stdout.strip()
+    except FileNotFoundError:
         return None
-    return result.stdout.strip()
 
 
 def main():
