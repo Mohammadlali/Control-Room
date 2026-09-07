@@ -45,77 +45,69 @@ jobs:
           ISSUE_BODY: ${{ github.event.issue.body }}
           ISSUE_NUM: ${{ github.event.issue.number }}
         run: |
-          REPO="mohammadlali0707-stack/Control-Room"
-          # Sanitize: replace backticks, double quotes, $(), ${} to avoid shell injection
+          REPO='mohammadlali0707-stack/Control-Room'
           sanitize() { sed "s/\`/'/g; s/\"/'/g; s/\$(/DOLLAR(/g; s/\${/DOLLAR{/g"; }
           SAFE_TITLE=$(printf '%s' "$ISSUE_TITLE" | tr -d '`"\\$')
           SAFE_BODY=$(printf '%s' "$ISSUE_BODY" | sanitize)
-          AGENTS=$(cat AGENTS.md 2>/dev/null | sanitize || echo '(not found)')
-          WHERE=$(cat Team/WHERE_WE_ARE.md 2>/dev/null | sanitize || echo '(not found)')
-          TOKEN="$CTRL_TOKEN"
-          cat > /tmp/prompt.txt << ENDOFPROMPT
-=== EXECUTION MODE (MANDATORY) ===
-Run ALL steps SEQUENTIALLY. Do NOT spawn subagents, timers, or background tasks.
-
-=== CREDENTIALS ===
-CTRL_TOKEN: $TOKEN
-REPO: $REPO
-ISSUE_NUM: $ISSUE_NUM
-
-=== GIT SETUP ===
-git clone https://x-access-token:${TOKEN}@github.com/${REPO}.git /tmp/cr
-cd /tmp/cr
-git config user.email 'agy-bot@control-room.local'
-git config user.name 'AGY Bot'
-
-=== AGENTS.md ===
-$AGENTS
-
-=== WHERE_WE_ARE.md ===
-$WHERE
-
-=== TASK - Issue #$ISSUE_NUM: $SAFE_TITLE ===
-$SAFE_BODY
-
-=== REQUIRED STEPS ===
-
-STEP 0: Post a planning checklist comment BEFORE any other work.
-  - Analyze the task and write 3-7 concrete sub-tasks.
-  - Post a comment to: POST https://api.github.com/repos/$REPO/issues/$ISSUE_NUM/comments
-  - Use Authorization header: Bearer plus the CTRL_TOKEN value above.
-  - Comment body (markdown):
-      ### Working on it
-      **Todo list**
-      - [ ] Gather context and verify claims
-      - [ ] Task 1: describe specific task
-      - [ ] Task 2: describe specific task
-      - [ ] Run gates
-      - [ ] Final consolidated report
-  - Save the returned comment id for PATCH updates.
-  - After each sub-task completes, PATCH the comment:
-      PATCH https://api.github.com/repos/$REPO/issues/comments/COMMENT_ID_HERE
-      Update the body to change completed items from [ ] to [x].
-      Tick only completed items. Do this after EACH task, not just at end.
-
-STEP 1: Clone repo (see GIT SETUP above). Tick 'Gather context' in checklist.
-
-STEP 2: Complete ALL tasks from the issue body. Tick each checkbox after completion.
-
-STEP 3: Run gates: python3 Tools/run_gates.py (all must pass). Tick 'Run gates'.
-
-STEP 4: Update Team/CHANGELOG.md with real commit hash.
-
-STEP 5: git add -A and git commit and git push origin main.
-
-STEP 6: Tick 'Final consolidated report'. Post final report:
-  - POST https://api.github.com/repos/$REPO/issues/$ISSUE_NUM/comments
-  - Format:
-      Done
-      Push lines: paste exact git push output here
-      1. Task name: what you found, changed, why. Evidence: hash, file, count.
-      Gate count: X pass, 0 fail.
-ENDOFPROMPT
-          echo "Prompt: $(wc -l < /tmp/prompt.txt) lines"
+          AGENTS=$(cat AGENTS.md 2>/dev/null | sanitize || printf '%s' '(not found)')
+          WHERE=$(cat Team/WHERE_WE_ARE.md 2>/dev/null | sanitize || printf '%s' '(not found)')
+          {
+            printf '%s\n' '=== EXECUTION MODE (MANDATORY) ==='
+            printf '%s\n' 'Run ALL steps SEQUENTIALLY. Do NOT spawn subagents or timers.'
+            printf '%s\n' ''
+            printf '%s\n' '=== CREDENTIALS ==='
+            printf 'CTRL_TOKEN: %s\n' "$CTRL_TOKEN"
+            printf 'REPO: %s\n' "$REPO"
+            printf 'ISSUE_NUM: %s\n' "$ISSUE_NUM"
+            printf '%s\n' ''
+            printf '%s\n' '=== GIT SETUP ==='
+            printf 'git clone https://x-access-token:%s@github.com/%s.git /tmp/cr\n' "$CTRL_TOKEN" "$REPO"
+            printf '%s\n' "cd /tmp/cr"
+            printf '%s\n' "git config user.email 'agy-bot@control-room.local'"
+            printf '%s\n' "git config user.name 'AGY Bot'"
+            printf '%s\n' ''
+            printf '%s\n' '=== AGENTS.md ==='
+            printf '%s\n' "$AGENTS"
+            printf '%s\n' ''
+            printf '%s\n' '=== WHERE_WE_ARE.md ==='
+            printf '%s\n' "$WHERE"
+            printf '%s\n' ''
+            printf 'TASK - Issue #%s: %s\n' "$ISSUE_NUM" "$SAFE_TITLE"
+            printf '%s\n' "$SAFE_BODY"
+            printf '%s\n' ''
+            printf '%s\n' '=== REQUIRED STEPS ==='
+            printf '%s\n' ''
+            printf '%s\n' 'STEP 0: Post planning checklist BEFORE any work.'
+            printf '%s\n' '  Analyze task. Break into 3-7 concrete sub-tasks.'
+            printf '%s\n' '  Use GitHub REST API to post a checklist comment on the issue:'
+            printf '  POST https://api.github.com/repos/%s/issues/%s/comments\n' "$REPO" "$ISSUE_NUM"
+            printf '%s\n' '  Header: Authorization: Bearer CTRL_TOKEN'
+            printf '%s\n' '  Body field: body (markdown):'
+            printf '%s\n' '    ### Working on it'
+            printf '%s\n' '    **Todo list**'
+            printf '%s\n' '    - [ ] Gather context and verify claims'
+            printf '%s\n' '    - [ ] Task 1: describe'
+            printf '%s\n' '    - [ ] Run gates'
+            printf '%s\n' '    - [ ] Final consolidated report'
+            printf '%s\n' '  Save the comment id from the response.'
+            printf '%s\n' '  After each sub-task, PATCH the comment to tick completed checkboxes:'
+            printf '  PATCH https://api.github.com/repos/%s/issues/comments/COMMENT_ID_HERE\n' "$REPO"
+            printf '%s\n' '  Update body: change done items from [ ] to [x]. Do this after EACH task.'
+            printf '%s\n' ''
+            printf '%s\n' 'STEP 1: Clone (GIT SETUP above). Tick Gather context checkbox.'
+            printf '%s\n' 'STEP 2: Complete all tasks in issue body. Tick each checkbox immediately after.'
+            printf '%s\n' 'STEP 3: python3 Tools/run_gates.py (all must pass). Tick Run gates.'
+            printf '%s\n' 'STEP 4: Update Team/CHANGELOG.md with real commit hash.'
+            printf '%s\n' 'STEP 5: git add -A and git commit and git push origin main'
+            printf '%s\n' 'STEP 6: Tick Final report checkbox. Post final report comment:'
+            printf '  POST https://api.github.com/repos/%s/issues/%s/comments\n' "$REPO" "$ISSUE_NUM"
+            printf '%s\n' '  Format:'
+            printf '%s\n' '    Done'
+            printf '%s\n' '    Push lines: paste exact git push output'
+            printf '%s\n' '    1. Task: evidence (commit hash, file, count)'
+            printf '%s\n' '    Gate count: X pass, 0 fail'
+          } > /tmp/prompt.txt
+          printf 'Prompt: %s lines\n' "$(wc -l < /tmp/prompt.txt)"
 
       - name: Dispatch to agw-workers
         id: dispatch
