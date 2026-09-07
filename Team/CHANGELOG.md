@@ -46,5 +46,8 @@ All commits must be recorded here. Exempt: commits dedicated solely to recording
 - `7c9f22f`
   - **AGY structured planning & reporting format:** Mandated STEP 0 planning checklist comment and comprehensive final report format (with exact push lines, numbered empirical findings, and gate counts) in `control-agy.yml`.
   - **Impact:** Guarantees transparent, falsifiable, and step-by-step verifiable reporting across all AGY issue runs.
+- `9c0e385`
+  - **Audit and complete CHANGELOG for recent commits (Issue #20):** Audited git history and recorded missing commits `bbf4237` (double-trigger fix) and `7c9f22f` (planning checklist & reporting format), created task 009, and updated living documentation.
+  - **Impact:** Ensures 100% compliance with `check_changelog` verification gate and keeps living status fully synchronized.
 
 
