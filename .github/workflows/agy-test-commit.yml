@@ -1,6 +1,8 @@
-name: Test Dispatch
+name: Test Dispatch Plus Commit
 on:
   workflow_dispatch:
+  commit_comment:
+    types: [created]
 jobs:
   test:
     runs-on: ubuntu-latest
