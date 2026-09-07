@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# .githooks/pre-commit
+# Control-Room local pre-commit hook.
+# Runs static analysis on workflow files - no AI tokens, no network calls.
+#
+# Install once:
+#   bash Tools/install_hooks.sh
+#
+# Or manually:
+#   git config core.hooksPath .githooks
+
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+echo "[pre-commit] Running workflow safety gate..."
+if python3 Tools/check_workflow_safety.py; then
+  echo "[pre-commit] OK"
+else
+  echo ""
+  echo "[pre-commit] BLOCKED: fix the errors above before committing."
+  echo "[pre-commit] This gate catches issues that waste AI tokens and time."
+  exit 1
+fi
