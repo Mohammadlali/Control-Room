@@ -75,3 +75,8 @@ All commits must be recorded here. Exempt: commits dedicated solely to recording
 - `6dbe29f`
   - **check_links gate enhancement & verification (Issue #12):** Hardened `Tools/check_links.py` to support link titles, ignore code blocks, handle root-relative links, and unquote URLs. Added task 004 in `Team/tasks/done/` and empirical verification report `Team/reports/004_issue_12_verification.md`. Restored missing CHANGELOG commits `ed157b8` and `4a04519`.
   - **Impact:** Robust documentation link verification gate protects against broken internal references; all verification gates pass silently with zero token consumption.
+
+- `87a85a8`
+  - **pre-push hook executable fix:** Set executable mode bit (100755) on `.githooks/pre-push`.
+  - **Impact:** Git hook executes systematically without requiring manual chmod on new clones.
+
