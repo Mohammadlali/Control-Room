@@ -37,4 +37,8 @@ All commits must be recorded here. Exempt: commits dedicated solely to recording
 - `01b27d5`
   - **Switch project to Tehran City (Issue #18):** Updated `Team/MAP.md` and `Team/WHERE_WE_ARE.md` to remove all references to `AirboxVIP` and `LifeOS`, and registered `Tehran City (Game development project on Account 1997 repo)` under active project integrations.
   - **Impact:** Aligns Control-Room tracking and next steps with Tehran City project development.
+- `d01df33`
+  - **Analysis Methodology & Source Quality Gate (Issue #19):** Added Analysis Methodology — Cross-Reference Requirement to `AGENTS.md`, created `Tools/check_source_quality.py` gate requiring git hash reference in `Team/WHERE_WE_ARE.md`, and integrated into `Tools/run_gates.py`.
+  - **Impact:** Enforces empirical ground-truth verification and mechanical gating against unverified claims in living documentation.
+
 
