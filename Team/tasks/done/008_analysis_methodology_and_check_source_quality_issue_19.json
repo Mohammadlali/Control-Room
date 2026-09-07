@@ -1,0 +1,15 @@
+{
+  "id": "008",
+  "assigned_to": "AGY Bot",
+  "title": "Add analysis methodology rules to AGENTS.md + new gate check_source_quality.py (Issue #19)",
+  "question": "Are analysis methodology rules recorded in AGENTS.md and does Tools/check_source_quality.py verify git hash reference in Team/WHERE_WE_ARE.md with zero-token silent pass in run_gates.py?",
+  "falsifiable_by": "python Tools/run_gates.py exits with code 0 and zero output.",
+  "touches": [
+    "AGENTS.md",
+    "Tools/check_source_quality.py",
+    "Tools/run_gates.py",
+    "Team/WHERE_WE_ARE.md",
+    "Team/MAP.md",
+    "Team/CHANGELOG.md"
+  ]
+}

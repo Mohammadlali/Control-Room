@@ -22,11 +22,14 @@
   - `poll_tasks.py`: Validates task format and `falsifiable_by` existence.
   - `verify_claims.py`: Validates file reference integrity in reports.
   - `check_links.py`: Added to suite; mechanically verifies internal document markdown links and paths.
+  - `check_source_quality.py`: Added to suite; verifies Team/WHERE_WE_ARE.md contains at least one git hash reference (Issue #19).
   - `run_gates.py`: Master runner with zero-token silent pass.
+- **Governance & Analysis Methodology:**
+  - `AGENTS.md`: Added Analysis Methodology — Cross-Reference Requirement rules (Issue #19).
 - **Bot & Automation:**
   - `control-agy.yml`: AGY bot listening for `@agy` mentions on Issues and Issue comments.
   - All tasks routed and executed through AGY issues.
-  - Issues 1 through 17 fully resolved and closed.
+  - Issues 1 through 19 fully resolved and addressed.
   - Bash injection resolved: issue body/title passed safely via environment variables (`e8b9e42`).
   - Sequential execution mode active (`EXECUTION MODE: sequential`), eliminating timeouts and preventing background subagents/tasks (`2408d7a`, Issue #16).
   - MCP Integration: Full operational access to Control-Room repository.

@@ -35,3 +35,29 @@ python Tools/run_gates.py
 ## 5. No Claim Without a Probe
 - Never assert "tests passed", "working fine", or "fixed" without providing the exact probe command, the exit code, and the output.
 - All task definitions in `Team/tasks/` MUST include `falsifiable_by`: the empirical test that defines success or refutes failure.
+
+---
+
+## Analysis Methodology — Cross-Reference Requirement
+
+When any agent (AI or human) analyzes repository state and writes a report or issue:
+
+1. NEVER treat WHERE_WE_ARE.md or MAP.md as ground truth alone.
+   They are hypotheses, not facts. Cross-reference every claim.
+
+2. For merge status: verify with actual branch ancestry
+   (`git log --oneline branch-a..branch-b`), not documentation.
+
+3. For file existence: check the file actually exists before claiming
+   it exists or does not exist.
+
+4. For 'current' status: run `git log --since='24h' --oneline` first.
+   A claim is only valid if at least one git hash supports it.
+
+5. Living documents fall behind reality within hours.
+   Treat any claim from a living doc as 'candidate, not result' —
+   verify with a second independent source before reporting.
+
+6. Archive gaps are active misinformation: if MAP.md omits context
+   that MAP_ARCHIVE.md contains, the gap is not historical —
+   it produces wrong conclusions for readers following AGENTS.md rule 2.
