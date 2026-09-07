@@ -14,7 +14,7 @@ on:
 
 permissions:
   issues: write
-  contents: read
+  contents: write
 
 jobs:
   agy-bot:
@@ -28,84 +28,93 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Ack comment
+      - name: Ack
         if: github.event_name != 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh issue comment "${{ github.event.issue.number }}" \
             --repo "${{ github.repository }}" \
-            --body "🤖 **AGY is on it.** Will reply when done."
+            --body "AGY is on it. Will reply when done."
 
-      - name: Build safe prompt
+      - name: Build prompt
         id: prompt
         env:
-          CTRL_TOKEN: ${{ secrets.CONTROL_ROOM_PAT }}
+          CONTROL_ROOM_TOKEN: ${{ secrets.CONTROL_ROOM_PAT }}
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_BODY: ${{ github.event.issue.body }}
           ISSUE_NUM: ${{ github.event.issue.number }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
         run: |
           REPO='mohammadlali0707-stack/Control-Room'
           sanitize() { sed "s/\`/'/g; s/\"/'/g; s/\$(/DOLLAR(/g; s/\${/DOLLAR{/g"; }
-          SAFE_TITLE=$(printf '%s' "$ISSUE_TITLE" | tr -d '`"\\$')
+          SAFE_TITLE=$(printf '%s' "$ISSUE_TITLE" | tr -d '`\\$')
           SAFE_BODY=$(printf '%s' "$ISSUE_BODY" | sanitize)
-          AGENTS=$(cat AGENTS.md 2>/dev/null | sanitize || printf '%s' '(not found)')
-          WHERE=$(cat Team/WHERE_WE_ARE.md 2>/dev/null | sanitize || printf '%s' '(not found)')
+          SAFE_COMMENT=$(printf '%s' "$COMMENT_BODY" | sanitize)
+          README=$(cat README.md 2>/dev/null | sanitize | head -50 || printf '%s' '(not found)')
           {
-            printf '%s\n' '=== EXECUTION MODE (MANDATORY) ==='
-            printf '%s\n' 'Run ALL steps SEQUENTIALLY. Do NOT spawn subagents or timers.'
+            printf '%s\n' 'You are AGY, an AI software engineer for the Control-Room repository.'
+            printf '%s\n' 'Control-Room is an autonomous infrastructure for managing GitHub projects with AI.'
             printf '%s\n' ''
             printf '%s\n' '=== CREDENTIALS ==='
-            printf 'CTRL_TOKEN: %s\n' "$CTRL_TOKEN"
+            printf 'CONTROL_ROOM_TOKEN: %s\n' "$CONTROL_ROOM_TOKEN"
             printf 'REPO: %s\n' "$REPO"
             printf 'ISSUE_NUM: %s\n' "$ISSUE_NUM"
             printf '%s\n' ''
             printf '%s\n' '=== GIT SETUP ==='
-            printf 'git clone https://x-access-token:%s@github.com/%s.git /tmp/cr\n' "$CTRL_TOKEN" "$REPO"
-            printf '%s\n' "cd /tmp/cr"
+            printf 'git clone https://x-access-token:%s@github.com/%s.git /tmp/repo\n' "$CONTROL_ROOM_TOKEN" "$REPO"
+            printf '%s\n' 'cd /tmp/repo'
             printf '%s\n' "git config user.email 'agy-bot@control-room.local'"
             printf '%s\n' "git config user.name 'AGY Bot'"
             printf '%s\n' ''
-            printf '%s\n' '=== AGENTS.md ==='
-            printf '%s\n' "$AGENTS"
-            printf '%s\n' ''
-            printf '%s\n' '=== WHERE_WE_ARE.md ==='
-            printf '%s\n' "$WHERE"
+            printf '%s\n' '=== PROJECT README ==='
+            printf '%s\n' "$README"
             printf '%s\n' ''
             printf 'TASK - Issue #%s: %s\n' "$ISSUE_NUM" "$SAFE_TITLE"
             printf '%s\n' "$SAFE_BODY"
+            if [ -n "$SAFE_COMMENT" ]; then
+              printf '%s\n' ''
+              printf '%s\n' 'LATEST COMMENT:'
+              printf '%s\n' "$SAFE_COMMENT"
+            fi
             printf '%s\n' ''
             printf '%s\n' '=== REQUIRED STEPS ==='
             printf '%s\n' ''
-            printf '%s\n' 'STEP 0: Post planning checklist BEFORE any work.'
-            printf '%s\n' '  Analyze task. Break into 3-7 concrete sub-tasks.'
-            printf '%s\n' '  Use GitHub REST API to post a checklist comment on the issue:'
-            printf '  POST https://api.github.com/repos/%s/issues/%s/comments\n' "$REPO" "$ISSUE_NUM"
-            printf '%s\n' '  Header: Authorization: Bearer CTRL_TOKEN'
-            printf '%s\n' '  Body field: body (markdown):'
-            printf '%s\n' '    ### Working on it'
-            printf '%s\n' '    **Todo list**'
-            printf '%s\n' '    - [ ] Gather context and verify claims'
-            printf '%s\n' '    - [ ] Task 1: describe'
-            printf '%s\n' '    - [ ] Run gates'
-            printf '%s\n' '    - [ ] Final consolidated report'
-            printf '%s\n' '  Save the comment id from the response.'
-            printf '%s\n' '  After each sub-task, PATCH the comment to tick completed checkboxes:'
-            printf '  PATCH https://api.github.com/repos/%s/issues/comments/COMMENT_ID_HERE\n' "$REPO"
-            printf '%s\n' '  Update body: change done items from [ ] to [x]. Do this after EACH task.'
+            printf '%s\n' 'STEP 0: Clone repo. Read relevant files. Then post a DETAILED planning checklist.'
             printf '%s\n' ''
-            printf '%s\n' 'STEP 1: Clone (GIT SETUP above). Tick Gather context checkbox.'
-            printf '%s\n' 'STEP 2: Complete all tasks in issue body. Tick each checkbox immediately after.'
-            printf '%s\n' 'STEP 3: python3 Tools/run_gates.py (all must pass). Tick Run gates.'
-            printf '%s\n' 'STEP 4: Update Team/CHANGELOG.md with real commit hash.'
-            printf '%s\n' 'STEP 5: git add -A and git commit and git push origin main'
-            printf '%s\n' 'STEP 6: Tick Final report checkbox. Post final report comment:'
-            printf '  POST https://api.github.com/repos/%s/issues/%s/comments\n' "$REPO" "$ISSUE_NUM"
+            printf '%s\n' '  CHECKLIST REQUIREMENTS (read this carefully):'
+            printf '%s\n' '  - Each item must name the EXACT file(s) and function(s) involved'
+            printf '%s\n' '  - Each item must state what you will DO and what evidence proves it done'
+            printf '%s\n' '  - Items should be specific enough that a stranger can verify completion'
+            printf '%s\n' '  - BAD:  - [ ] Understand task'
+            printf '%s\n' '  - BAD:  - [ ] Implement changes'
+            printf '%s\n' '  - GOOD: - [ ] Read `Tools/run_gates.py`: confirm GATES list has 7 entries'
+            printf '%s\n' '  - GOOD: - [ ] Add `check_foo()` to `Tools/check_foo.py`: returns 0 on pass, 1 on fail'
+            printf '%s\n' '  - GOOD: - [ ] Append gate entry to `GATES` in `Tools/run_gates.py`'
+            printf '%s\n' '  - GOOD: - [ ] Commit hash: abc1234 -- `feat: add check_foo gate`'
+            printf '%s\n' ''
+            printf '%s\n' '  POST to: https://api.github.com/repos/mohammadlali0707-stack/Control-Room/issues/ISSUE_NUM/comments'
+            printf '%s\n' '  Authorization: Bearer CONTROL_ROOM_TOKEN'
             printf '%s\n' '  Format:'
-            printf '%s\n' '    Done'
-            printf '%s\n' '    Push lines: paste exact git push output'
-            printf '%s\n' '    1. Task: evidence (commit hash, file, count)'
-            printf '%s\n' '    Gate count: X pass, 0 fail'
+            printf '%s\n' '    ## Working'
+            printf '%s\n' '    > <one-line status of what you are doing right now>'
+            printf '%s\n' ''
+            printf '%s\n' '    ## Todo'
+            printf '%s\n' '    - [ ] Read `<file>`: verify <specific thing>'
+            printf '%s\n' '    - [ ] Implement `<function>` in `<file>`: <what it does>'
+            printf '%s\n' '    - [ ] Run `python3 Tools/run_gates.py`: all gates pass'
+            printf '%s\n' '    - [ ] Update `Team/CHANGELOG.md`: add entry for this change'
+            printf '%s\n' '    - [ ] Commit: `<type>: <short description>`'
+            printf '%s\n' '    - [ ] Post final report with commit hash and evidence'
+            printf '%s\n' ''
+            printf '%s\n' '  Save the comment id. After completing each item, PATCH it to tick [x].'
+            printf '%s\n' '  PATCH: https://api.github.com/repos/mohammadlali0707-stack/Control-Room/issues/comments/COMMENT_ID'
+            printf '%s\n' ''
+            printf '%s\n' 'STEP 1: Implement all tasks from checklist.'
+            printf '%s\n' 'STEP 2: Run gates: python3 Tools/run_gates.py (must pass).'
+            printf '%s\n' 'STEP 3: Update Team/CHANGELOG.md with this change.'
+            printf '%s\n' 'STEP 4: git add -A && git commit && git push origin main'
+            printf '%s\n' 'STEP 5: Post final report with commit hash and a summary table of what was done.'
           } > /tmp/prompt.txt
           printf 'Prompt: %s lines\n' "$(wc -l < /tmp/prompt.txt)"
 
@@ -113,24 +122,17 @@ jobs:
         id: dispatch
         env:
           GH_TOKEN: ${{ secrets.MOHAMMADLALI_PAT }}
-          ISSUE_NUM: ${{ github.event.issue.number }}
-          REPO: ${{ github.repository }}
         run: |
-          ACC_LABEL=$(gh issue view "$ISSUE_NUM" --repo "$REPO" --json labels \
-            -q '.labels[].name' | grep '^agy-acc:' | head -1 || echo "")
-          ACC_INDEX="0"
-          [ -n "$ACC_LABEL" ] && ACC_INDEX="${ACC_LABEL#agy-acc:}"
           PROMPT=$(cat /tmp/prompt.txt)
           gh workflow run agw-worker.yml \
             --repo Mohammadlali/agw-workers \
             --field "prompt=$PROMPT" \
-            --field "acc_index=$ACC_INDEX" \
-            --field "callback_id=cr-$ISSUE_NUM-${{ github.run_id }}"
+            --field "acc_index=0" \
+            --field "callback_id=cr-${{ github.event.issue.number }}-${{ github.run_id }}"
           sleep 10
           RUN_ID=$(gh run list --repo Mohammadlali/agw-workers \
             --workflow agw-worker.yml --limit 1 --json databaseId -q '.[0].databaseId')
           echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
-          echo "Dispatched: $RUN_ID (acc=$ACC_INDEX)"
 
       - name: Wait for worker
         env:
@@ -144,22 +146,20 @@ jobs:
             sleep 30
           done
 
-      - name: Download result
-        env:
-          GH_TOKEN: ${{ secrets.MOHAMMADLALI_PAT }}
-        run: |
-          RID="${{ steps.dispatch.outputs.run_id }}"
-          mkdir -p /tmp/agy-out
-          gh run download "$RID" --repo Mohammadlali/agw-workers --dir /tmp/agy-out 2>/dev/null || true
-          OUT=$(find /tmp/agy-out -name "agy_output.txt" | head -1)
-          [ -n "$OUT" ] && head -c 58000 "$OUT" > /tmp/final.txt || echo "(no output)" > /tmp/final.txt
-
-      - name: Post result
+      - name: Download and post result
         if: github.event_name != 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MOHAMMADLALI_PAT: ${{ secrets.MOHAMMADLALI_PAT }}
           WORKER_RUN: ${{ steps.dispatch.outputs.run_id }}
         run: |
+          mkdir -p /tmp/agy-out
+          GH_TOKEN="$MOHAMMADLALI_PAT" gh run download "$WORKER_RUN" \
+            --repo Mohammadlali/agw-workers --dir /tmp/agy-out 2>/dev/null || true
+          OUT=$(find /tmp/agy-out -name "agy_output.txt" | head -1)
+          [ -n "$OUT" ] && head -c 58000 "$OUT" > /tmp/final.txt || printf '%s\n' '(no output)' > /tmp/final.txt
+          WORKER_URL="https://github.com/Mohammadlali/agw-workers/actions/runs/$WORKER_RUN"
+          printf '%s\n\n---\n*AGY worker: %s*\n' "$(cat /tmp/final.txt)" "$WORKER_URL" > /tmp/comment.txt
           gh issue comment "${{ github.event.issue.number }}" \
             --repo "${{ github.repository }}" \
-            --body "AGY output: $(cat /tmp/final.txt) -- run: https://github.com/Mohammadlali/agw-workers/actions/runs/$WORKER_RUN"
+            --body-file /tmp/comment.txt
