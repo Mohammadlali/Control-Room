@@ -13,6 +13,7 @@ GATES = [
     ("check_changelog", [sys.executable, os.path.join(ROOT, "Tools", "check_changelog.py")]),
     ("poll_tasks", [sys.executable, os.path.join(ROOT, "Tools", "poll_tasks.py"), "--validate"]),
     ("verify_claims", [sys.executable, os.path.join(ROOT, "Tools", "verify_claims.py")]),
+    ("check_links", [sys.executable, os.path.join(ROOT, "Tools", "check_links.py")]),
 ]
 
 
