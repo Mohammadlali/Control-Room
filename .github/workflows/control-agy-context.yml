@@ -36,11 +36,17 @@ jobs:
           SAFE_COMMENT=$(printf '%s' "$USER_COMMENT" | sanitize)
           SAFE_DT=$(printf '%s' "$DISCUSSION_TITLE" | sanitize)
           SAFE_DB=$(printf '%s' "$DISCUSSION_BODY" | sanitize)
+          printf '%s\n' "$DISCUSSION_NODE" > /tmp/disc_node.txt
           {
             printf '%s\n' '=== CONTEXT MODE ==='
-            printf '%s\n' 'Read discussion context. Answer the question OR create an issue.'
+            printf '%s\n' 'Read discussion context. Output your answer. Do NOT call any APIs.'
             printf '%s\n' ''
-            printf '%s\n' '=== CREDENTIALS ==='
+            printf '%s\n' '=== IMPORTANT OUTPUT FORMAT ==='
+            printf '%s\n' 'Your ENTIRE response must be the answer text only.'
+            printf '%s\n' 'No preamble, no explanation of what you are doing.'
+            printf '%s\n' 'Just the answer in the same language as the question.'
+            printf '%s\n' ''
+            printf '%s\n' '=== CREDENTIALS (only needed for CASE B) ==='
             printf 'CTRL_TOKEN: %s\n' "$CTRL_TOKEN"
             printf 'REPO: %s\n' "$REPO"
             printf '%s\n' ''
@@ -54,24 +60,18 @@ jobs:
             printf '%s\n' '=== INSTRUCTIONS ==='
             printf '%s\n' 'Determine which case applies:'
             printf '%s\n' ''
-            printf '%s\n' 'CASE A - User asks a QUESTION:'
-            printf '%s\n' '  1. Read the discussion context above carefully.'
-            printf '%s\n' '  2. Answer clearly in same language (Persian or English).'
-            printf '%s\n' '  3. Post your answer via GraphQL:'
-            printf '%s\n' '     POST https://api.github.com/graphql'
-            printf '%s\n' '     Header: Authorization: Bearer CTRL_TOKEN'
-            printf '%s\n' '     Header: Content-Type: application/json'
-            printf '     Body: {"query": "mutation { addDiscussionComment(input: {discussionId: \"%s\", body: \"ANSWER_HERE\"}) { comment { id } } }" }\n' "$DISCUSSION_NODE"
-            printf '%s\n' '  4. Do NOT clone repo or run gates.'
+            printf '%s\n' 'CASE A - User asks a QUESTION about the context:'
+            printf '%s\n' '  Output ONLY the answer text. Match the language of the question.'
+            printf '%s\n' '  Do NOT clone repo, run gates, or call any APIs.'
+            printf '%s\n' '  The workflow will post your output as a Discussion reply automatically.'
             printf '%s\n' ''
-            printf '%s\n' 'CASE B - User requests a code change or ACTION:'
-            printf '  1. POST https://api.github.com/repos/%s/issues\n' "$REPO"
-            printf '%s\n' '     Authorization: Bearer CTRL_TOKEN'
-            printf '%s\n' '     title: clear descriptive title'
-            printf '%s\n' '     body: @agy on first line, then detailed task with acceptance criteria'
-            printf '%s\n' '  2. Reply to discussion with the new issue URL.'
-            printf '%s\n' '  3. The AGY issue bot will automatically process that issue.'
-            printf '%s\n' '  4. Do NOT do the actual work here - just create the issue.'
+            printf '%s\n' 'CASE B - User requests a CODE CHANGE or ACTION:'
+            printf '  POST https://api.github.com/repos/%s/issues\n' "$REPO"
+            printf '%s\n' '  Authorization: Bearer CTRL_TOKEN'
+            printf '%s\n' '  title: descriptive title'
+            printf '%s\n' '  body: @agy on first line, detailed task with acceptance criteria'
+            printf '%s\n' '  Then output: "Created issue: <issue URL>"'
+            printf '%s\n' '  The issue bot will handle the actual implementation.'
           } > /tmp/prompt.txt
           printf 'Prompt: %s lines\n' "$(wc -l < /tmp/prompt.txt)"
 
@@ -103,7 +103,7 @@ jobs:
             sleep 30
           done
 
-      - name: Log result
+      - name: Download AGY output
         env:
           GH_TOKEN: ${{ secrets.MOHAMMADLALI_PAT }}
         run: |
@@ -111,4 +111,26 @@ jobs:
           mkdir -p /tmp/agy-out
           gh run download "$RID" --repo Mohammadlali/agw-workers --dir /tmp/agy-out 2>/dev/null || true
           OUT=$(find /tmp/agy-out -name "agy_output.txt" | head -1)
-          [ -n "$OUT" ] && head -c 10000 "$OUT" || echo "(no output)"
+          if [ -n "$OUT" ]; then
+            head -c 58000 "$OUT" > /tmp/final.txt
+          else
+            printf '%s\n' '(AGY produced no output)' > /tmp/final.txt
+          fi
+          echo "Output size: $(wc -c < /tmp/final.txt) bytes"
+
+      - name: Post reply to Discussion
+        env:
+          CTRL_TOKEN: ${{ secrets.CONTROL_ROOM_PAT }}
+          DISCUSSION_NODE: ${{ github.event.discussion.node_id }}
+        run: |
+          ANSWER=$(cat /tmp/final.txt)
+          WORKER_URL="https://github.com/Mohammadlali/agw-workers/actions/runs/${{ steps.dispatch.outputs.run_id }}"
+          FULL_REPLY=$(printf '%s\n\n---\n*AGY worker run: %s*' "$ANSWER" "$WORKER_URL")
+          jq -n \
+            --arg node "$DISCUSSION_NODE" \
+            --arg body "$FULL_REPLY" \
+            '{query: "mutation($did: ID!, $body: String!) { addDiscussionComment(input: {discussionId: $did, body: $body}) { comment { id } } }", variables: {did: $node, body: $body}}' | \
+          curl -sf -X POST https://api.github.com/graphql \
+            -H "Authorization: Bearer $CTRL_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d @- | jq '.data.addDiscussionComment.comment.id'
