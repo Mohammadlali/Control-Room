@@ -34,3 +34,7 @@ All commits must be recorded here. Exempt: commits dedicated solely to recording
 - `09e0e6e`
   - **Status & Map Refresh (Issue #17):** Updated `Team/WHERE_WE_ARE.md` and `Team/MAP.md` reflecting full AGY Issue Bot operational state, bash injection fix, sequential execution mode, verification gates suite, 99-slot batch dispatch, full MCP access, and closure of issues 1-16.
   - **Impact:** Keeps living documentation synchronized with the current system state.
+- `01b27d5`
+  - **Switch project to Tehran City (Issue #18):** Updated `Team/MAP.md` and `Team/WHERE_WE_ARE.md` to remove all references to `AirboxVIP` and `LifeOS`, and registered `Tehran City (Game development project on Account 1997 repo)` under active project integrations.
+  - **Impact:** Aligns Control-Room tracking and next steps with Tehran City project development.
+
