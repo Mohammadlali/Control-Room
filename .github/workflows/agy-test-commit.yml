@@ -1,6 +1,7 @@
-name: Test No Types
+name: Test Discussion Comment
 on:
-  commit_comment:
+  discussion_comment:
+    types: [created]
 jobs:
   test:
     runs-on: ubuntu-latest
