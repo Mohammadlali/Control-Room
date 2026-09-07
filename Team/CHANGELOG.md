@@ -4,6 +4,7 @@ This file records every significant change with real commit hashes.
 
 ---
 
+- `d454802` — feat(tools): add token fallback for gh authentication in check_issue_protocol (Issue #24).
 - `f563020` — feat: complete Issue #22 verification, reinforce gate and record task 012 (Issue #22).
 - `ee34e21` — chore(tools): set executable permissions on check_issue_protocol and probe (Issue #24).
 - `edde816` — feat: complete Issue #24 verification, document task 011 and align paths (Issue #24).
