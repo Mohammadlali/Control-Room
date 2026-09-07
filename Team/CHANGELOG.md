@@ -68,3 +68,4 @@ This file records every significant change with real commit hashes.
 - `de38a36` - feat: add .githooks/pre-commit - runs check_workflow_safety before each commit.
 - `4781d62` - feat: add Tools/install_hooks.sh - one-command hook activation.
 - `3c065b7` - feat: register check_workflow_safety as gate 7 in run_gates.py.
+- `8cecf54` - fix: check_workflow_safety - exclude tr/sed lines from printf double-quote check (false positive fix).
