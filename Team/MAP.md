@@ -11,7 +11,7 @@
 |------------|--------|---------------|-------------|
 | 1. Control-Room Core & Gates | ACTIVE | Local / AGY Bot / MCP | `mohammadlali0707-stack/Control-Room` |
 | 2. Cloud Runner Workflows | OPERATIONAL | GitHub Actions / AGY | `mohammadlali0707-stack/agw-workers` |
-| 3. Project Portfolios (AirboxVIP) | PENDING INTEGRATION | TBD | Account 07 Repos |
+| 3. Project Integrations (Tehran City) | ACTIVE | TBD | Account 1997 repo |
 
 ---
 
@@ -26,7 +26,7 @@
 - **Bot & Automation:**
   - `control-agy.yml`: AGY bot listening for `@agy` mentions on Issues and Issue comments.
   - All tasks routed and executed through AGY issues.
-  - Issues 1 through 16 fully resolved and closed.
+  - Issues 1 through 17 fully resolved and closed.
   - Bash injection resolved: issue body/title passed safely via environment variables (`e8b9e42`).
   - Sequential execution mode active (`EXECUTION MODE: sequential`), eliminating timeouts and preventing background subagents/tasks (`2408d7a`, Issue #16).
   - MCP Integration: Full operational access to Control-Room repository.
@@ -46,4 +46,4 @@
 ---
 
 ## 3. Project Integrations
-- AirboxVIP_Coffeenet: Telegram bot service management and content generation jobs.
+- Tehran City (Game development project on Account 1997 repo)

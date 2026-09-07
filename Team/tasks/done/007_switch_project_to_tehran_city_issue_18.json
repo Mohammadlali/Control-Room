@@ -1,0 +1,12 @@
+{
+  "id": "007",
+  "assigned_to": "AGY Bot",
+  "title": "Update MAP.md and WHERE_WE_ARE.md: Switch project to Tehran City (Issue #18)",
+  "question": "Have AirboxVIP and LifeOS references been removed and Tehran City project added to active project integrations in MAP.md and WHERE_WE_ARE.md?",
+  "falsifiable_by": "python Tools/run_gates.py exits with code 0 and zero output.",
+  "touches": [
+    "Team/WHERE_WE_ARE.md",
+    "Team/MAP.md",
+    "Team/CHANGELOG.md"
+  ]
+}
