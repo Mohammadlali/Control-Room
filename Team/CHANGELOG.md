@@ -4,6 +4,7 @@ This file records every significant change with real commit hashes.
 
 ---
 
+- `f563020` — feat: complete Issue #22 verification, reinforce gate and record task 012 (Issue #22).
 - `ee34e21` — chore(tools): set executable permissions on check_issue_protocol and probe (Issue #24).
 - `edde816` — feat: complete Issue #24 verification, document task 011 and align paths (Issue #24).
 - `260f97b` — chore: trigger gates after protocol backfill for issues #23 and #24.
