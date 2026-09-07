@@ -4,6 +4,7 @@ This file records every significant change with real commit hashes.
 
 ---
 
+- `260f97b` — chore: trigger gates after protocol backfill for issues #23 and #24.
 - `ed157b8` — docs: add comprehensive onboarding guide and update living state (Issue #11)
 - `4a04519` — docs: enrich onboarding guide with prompt patterns, lifecycle flow, and align README
 - `6dbe29f` — feat(gates): enhance check_links gate, record task 004 and update living state (Issue #12)

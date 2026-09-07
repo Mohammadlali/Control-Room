@@ -35,13 +35,13 @@
   - Sequential execution mode active (`EXECUTION MODE: sequential`), eliminating timeouts and preventing background subagents/tasks (`2408d7a`, Issue #16).
   - Double-trigger prevention active: issue_comment trigger scoped to body only, excluding bot comments (`bbf4237`).
   - Structured execution lifecycle active: STEP 0 planning checklist, live PATCH updates, and comprehensive report structure with evidence and gate counts (`7c9f22f`, `d1353eb`).
-  - Verification test completed: `Team/hello_test.md` verified checklist and reporting format; Persian summary documented in `Team/reports/005_issue_25_persian_summary.md` (Issue #25).
+  - Verification test completed: `Team/tests/hello_test.md` verified checklist and reporting format; Persian summary documented in `Team/reports/005_issue_25_persian_summary.md` (Issue #25).
   - MCP Integration: Full operational access to Control-Room repository.
   - Authenticated Git operations enabled via `CONTROL_ROOM_PAT` for direct main delivery.
   - `batch-dispatch.yml`: 99-slot round-robin batch dispatch across 9 accounts ready.
   - Pre-push git hook (`.githooks/pre-push`) for offline gate enforcement.
   - Comprehensive user & agent guide in `Team/START_HERE.md` (Issue #11).
-  - Pipeline execution verification & sequential mode stabilization documented in `Team/pipeline_test.md` (Issue #16).
+  - Pipeline execution verification & sequential mode stabilization documented in `Team/tests/pipeline_test.md` (Issue #16).
 
 ---
 
