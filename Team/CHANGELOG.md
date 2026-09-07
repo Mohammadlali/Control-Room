@@ -47,3 +47,18 @@ This file records every significant change with real commit hashes.
 - `6d4f8c9` - feat: add control-agy-context.yml - context responder for commit and discussion comments.
   - Triggers on commit_comment and discussion_comment events.
   - CASE A: reads context, answers Q in-place. CASE B: creates issue with @agy for action requests.
+- `e124e66` - test: minimal commit_comment workflow to diagnose context responder trigger issue.
+- `15d5520` - test: remove minimal test workflow (cleanup).
+- `0058fae` - test: ultra-minimal commit_comment workflow (diagnostic).
+- `25522ed` - test: remove test (cleanup).
+- `7f6e20a` - test: workflow_dispatch only to verify naming (diagnostic).
+- `f63a404` - test: dispatch+commit_comment combo (diagnostic).
+- `a647b1d` - test: commit_comment without types filter (diagnostic).
+- `86f2b83` - test: discussion_comment only (confirmed working).
+- `d886225` - test: cleanup test workflow files.
+- `f0e0fe6` - fix: replace multi-line Python with jq in context responder - fix YAML indentation parse error.
+- `4ade397` - fix: re-register context responder now that Discussions is enabled.
+- `b2019ca` - fix: tighten trigger - require startsWith('@agy') not contains.
+- `8f82004` - fix: remove commit_comment (unsupported in this repo), keep discussion_comment only.
+  - Renamed to: Control-Room AGY Discussion Responder.
+  - Discussion tab now supported: post @agy comment in any Discussion to trigger AGY.
