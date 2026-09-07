@@ -1,4 +1,4 @@
-﻿#!/bin/sh
+#!/bin/sh
 # Control-Room pre-push hook — runs all gates before every push.
 # Install once per clone: git config core.hooksPath .githooks
 
