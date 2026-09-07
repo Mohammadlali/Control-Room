@@ -36,42 +36,36 @@ jobs:
           SAFE_COMMENT=$(printf '%s' "$USER_COMMENT" | sanitize)
           SAFE_DT=$(printf '%s' "$DISCUSSION_TITLE" | sanitize)
           SAFE_DB=$(printf '%s' "$DISCUSSION_BODY" | sanitize)
-          printf '%s\n' "$DISCUSSION_NODE" > /tmp/disc_node.txt
           {
-            printf '%s\n' '=== CONTEXT MODE ==='
-            printf '%s\n' 'Read discussion context. Output your answer. Do NOT call any APIs.'
+            printf '%s\n' 'You are AGY, an AI assistant for a GitHub repository.'
+            printf '%s\n' 'Read the discussion context below and answer the user question.'
             printf '%s\n' ''
-            printf '%s\n' '=== IMPORTANT OUTPUT FORMAT ==='
-            printf '%s\n' 'Your ENTIRE response must be the answer text only.'
-            printf '%s\n' 'No preamble, no explanation of what you are doing.'
-            printf '%s\n' 'Just the answer in the same language as the question.'
-            printf '%s\n' ''
-            printf '%s\n' '=== CREDENTIALS (only needed for CASE B) ==='
-            printf 'CTRL_TOKEN: %s\n' "$CTRL_TOKEN"
-            printf 'REPO: %s\n' "$REPO"
+            printf '%s\n' 'OUTPUT FORMAT: Output only the answer text. No preamble. No explanation.'
+            printf '%s\n' 'LANGUAGE: Answer in same language as the user question.'
             printf '%s\n' ''
             printf 'DISCUSSION #%s: %s\n' "$DISCUSSION_NUM" "$SAFE_DT"
-            printf '%s\n' ''
+            printf '%s\n' '---'
             printf '%s\n' "$SAFE_DB"
+            printf '%s\n' '---'
             printf '%s\n' ''
-            printf '%s\n' '=== USER COMMENT ==='
+            printf '%s\n' 'USER COMMENT:'
             printf '%s\n' "$SAFE_COMMENT"
             printf '%s\n' ''
-            printf '%s\n' '=== INSTRUCTIONS ==='
-            printf '%s\n' 'Determine which case applies:'
+            printf '%s\n' 'INSTRUCTIONS:'
             printf '%s\n' ''
-            printf '%s\n' 'CASE A - User asks a QUESTION about the context:'
-            printf '%s\n' '  Output ONLY the answer text. Match the language of the question.'
-            printf '%s\n' '  Do NOT clone repo, run gates, or call any APIs.'
-            printf '%s\n' '  The workflow will post your output as a Discussion reply automatically.'
+            printf '%s\n' 'CASE A - User is asking a question:'
+            printf '%s\n' '  Read the discussion context carefully.'
+            printf '%s\n' '  Output only the answer. The workflow will post it automatically.'
             printf '%s\n' ''
-            printf '%s\n' 'CASE B - User requests a CODE CHANGE or ACTION:'
-            printf '  POST https://api.github.com/repos/%s/issues\n' "$REPO"
-            printf '%s\n' '  Authorization: Bearer CTRL_TOKEN'
-            printf '%s\n' '  title: descriptive title'
-            printf '%s\n' '  body: @agy on first line, detailed task with acceptance criteria'
-            printf '%s\n' '  Then output: "Created issue: <issue URL>"'
-            printf '%s\n' '  The issue bot will handle the actual implementation.'
+            printf '%s\n' 'CASE B - User is requesting a code change or task:'
+            printf '%s\n' '  Create a GitHub issue using this API:'
+            printf '%s\n' '  Method: POST'
+            printf '  URL: https://api.github.com/repos/%s/issues\n' "$REPO"
+            printf '%s\n' '  Header - Authorization: Bearer CTRL_TOKEN_VALUE'
+            printf '  CTRL_TOKEN_VALUE = %s\n' "$CTRL_TOKEN"
+            printf '%s\n' '  Issue title: short descriptive title'
+            printf '%s\n' '  Issue body: first line must be @agy, then detailed task description'
+            printf '%s\n' '  After creating the issue, output only: Issue created at <URL>'
           } > /tmp/prompt.txt
           printf 'Prompt: %s lines\n' "$(wc -l < /tmp/prompt.txt)"
 
@@ -117,6 +111,7 @@ jobs:
             printf '%s\n' '(AGY produced no output)' > /tmp/final.txt
           fi
           echo "Output size: $(wc -c < /tmp/final.txt) bytes"
+          head -5 /tmp/final.txt
 
       - name: Post reply to Discussion
         env:
@@ -125,7 +120,7 @@ jobs:
         run: |
           ANSWER=$(cat /tmp/final.txt)
           WORKER_URL="https://github.com/Mohammadlali/agw-workers/actions/runs/${{ steps.dispatch.outputs.run_id }}"
-          FULL_REPLY=$(printf '%s\n\n---\n*AGY worker run: %s*' "$ANSWER" "$WORKER_URL")
+          FULL_REPLY=$(printf '%s\n\n---\n*AGY worker: %s*' "$ANSWER" "$WORKER_URL")
           jq -n \
             --arg node "$DISCUSSION_NODE" \
             --arg body "$FULL_REPLY" \
