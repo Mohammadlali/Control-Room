@@ -1,27 +1,9 @@
-# Control-Room CHANGELOG
+# Control-Room Changelog
 
-All commits must be recorded here. Exempt: commits dedicated solely to recording the changelog (`changelog: record <hash>`).
+This file records every significant change with real commit hashes.
 
 ---
 
-- `a37f152` — settings.json schema fix
-- `1d4dad2` — Model Upgrade + Fallback Fix
-- `699e633` — if-condition Fix
-- `e824308` — GEMINI_MODEL Env Fix
-- `e928bf2` — Switch to AGY bot
-- `91c843f` — Workflow if-condition Fix
-- `0a437d4` — Full Workflow Rewrite
-- `1b9ac11` — Bash-safe Prompt
-- `63e00fa` — YAML Parse Fix
-- `1dcf383` — Context-embedded Prompt
-- `87657cc` — Git Push Auth for AGY
-- `3d4b1e3` — Status & Map Refresh (Issue #10)
-- `16db43b` — Round-Robin Batch Dispatch + Git Hooks
-- `92be0b1` — FAQ & Verification Report (Issue #11) by AGY Bot
-- `e064c77` — check_links gate added (Issue #12)
-- `2408d7a`
-  - **EXECUTION MODE prompt fix:** Added explicit sequential-execution instructions to AGY prompt. Prevents AGY from spawning subagents/background tasks/timers that caused timeout on issues #12 and #13.
-  - **Impact:** AGY now runs all steps synchronously within the 5-minute window. All tasks (simple and complex) go through AGY issues.
 - `ed157b8` — docs: add comprehensive onboarding guide and update living state (Issue #11)
 - `4a04519` — docs: enrich onboarding guide with prompt patterns, lifecycle flow, and align README
 - `6dbe29f` — feat(gates): enhance check_links gate, record task 004 and update living state (Issue #12)
@@ -49,5 +31,21 @@ All commits must be recorded here. Exempt: commits dedicated solely to recording
 - `9c0e385`
   - **Audit and complete CHANGELOG for recent commits (Issue #20):** Audited git history and recorded missing commits `bbf4237` (double-trigger fix) and `7c9f22f` (planning checklist & reporting format), created task 009, and updated living documentation.
   - **Impact:** Ensures 100% compliance with `check_changelog` verification gate and keeps living status fully synchronized.
-
-
+- `d1353eb`
+  - **Real-time checkbox tick via PATCH:** Updated `control-agy.yml` prompt to instruct AGY to capture comment ID after posting checklist and update each checkbox via `gh api PATCH` immediately after completing each step.
+  - **Impact:** Enables live progress visibility on GitHub issue checklist without requiring manual updates.
+- `082296c`
+  - **Fix: replace gh CLI with curl+token in prompt:** Replaced all `gh` CLI commands in the AGY prompt with `curl` + CTRL_TOKEN calls; added `export GH_TOKEN` and `export CTRL_TOKEN` to GIT SETUP. Root cause: agw-worker acc9 calls `gh` without `GH_TOKEN` before AGY runs, causing immediate exit code 1.
+  - **Impact:** Makes checklist posting and PATCH updates portable across all agw-worker accounts regardless of `GH_TOKEN` environment state.
+- `b9f2d83`
+  - **Issue Response Protocol in AGENTS.md (Issue #23):** Added `## Issue Response Protocol (Mandatory for ALL agents)` section to `AGENTS.md` requiring planning checklist before work and structured `**Done**` final report after. Enforced by `check_issue_protocol.py` gate.
+  - **Impact:** Rules are now repo-level, agent-agnostic — any agent reading AGENTS.md is bound by the protocol regardless of which machine or IDE they run on.
+- `040cde5`
+  - **New gate: check_issue_protocol.py (Issue #24):** Created `Tools/check_issue_protocol.py` that checks all @agy-mentioned issues closed in the last 7 days have a planning checklist comment and a final `**Done**` report. Offline-safe (exits 0 when gh CLI unavailable).
+  - **Impact:** Mechanically enforces Issue Response Protocol — any future session that closes an @agy issue without the required comments will fail the gate.
+- `007d3f2`
+  - **Probe for check_issue_protocol gate (Issue #24):** Created `Tools/probe_check_issue_protocol.py`.
+  - **Impact:** Enables automated validation of the new gate via the probe suite.
+- `ba56e78`
+  - **Wire check_issue_protocol into run_gates.py (Issue #24):** Added `check_issue_protocol` entry to GATES list in `Tools/run_gates.py`. Gate count: 5 → 6.
+  - **Impact:** Protocol compliance is now checked on every `python Tools/run_gates.py` run, closing issues #23 and #24.
