@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-run_gates.py -- Master Verification Gates Runner for Control-Room.
+"""run_gates.py -- Master Verification Gates Runner for Control-Room.
 Silent on full pass (exit 0, zero output = zero token consumption).
 Prints concise diagnostic and exits non-zero if any gate fails.
 """
@@ -16,6 +15,7 @@ GATES = [
     ("check_links", [sys.executable, os.path.join(ROOT, "Tools", "check_links.py")]),
     ("check_source_quality", [sys.executable, os.path.join(ROOT, "Tools", "check_source_quality.py")]),
     ("check_issue_protocol", [sys.executable, os.path.join(ROOT, "Tools", "check_issue_protocol.py")]),
+    ("check_workflow_safety", [sys.executable, os.path.join(ROOT, "Tools", "check_workflow_safety.py")]),
 ]
 
 
