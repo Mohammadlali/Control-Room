@@ -7,9 +7,10 @@ Checks (no AI tokens consumed, agent-agnostic):
   1. Double-quotes inside printf content strings
      - Breaks agw-worker when GitHub injects ${{ inputs.prompt }} into bash
      - bash sees:  PROMPT="...some \"quoted\" text..."  -> parse error
+     - Exception: lines with tr/sed (character-class args, not prompt content)
   2. Python inline code (-c) with insufficient YAML block indentation
      - YAML block scalar terminates on lines with less indentation than base
-     - GitHub shows workflow filename instead of name (silent parse failure)
+     - GitHub then shows the workflow file path instead of its name
   3. YAML syntax validity of all workflow files
      - Invalid YAML causes workflow to not register properly
 
@@ -28,6 +29,10 @@ C_OK   = "\033[92m\u2713\033[0m"
 C_FAIL = "\033[91m\u2717\033[0m"
 C_WARN = "\033[93m!\033[0m"
 
+# Lines containing these patterns use single-quotes for character classes
+# (tr -d, sed, etc.) rather than printf prompt content - skip them.
+_CHAR_CLASS_PATTERNS = ("tr -d", "tr -", "sed ", "| tr", "| sed")
+
 
 def check_1_double_quotes_in_printf(filepath, lines):
     """
@@ -44,11 +49,21 @@ def check_1_double_quotes_in_printf(filepath, lines):
 
     Fix: replace all \" in printf content strings with single-quote or
     rephrase the instruction text.
+
+    NOTE: lines using tr/sed (e.g. tr -d '`\"\\\\$') are excluded because
+    the single-quoted arg is a character class, not prompt content.
     """
     errors = []
     for i, raw_line in enumerate(lines, 1):
         line = raw_line.strip()
         if "printf" not in line:
+            continue
+        # Skip lines where single-quotes are character classes for tr/sed
+        if any(p in line for p in _CHAR_CLASS_PATTERNS):
+            continue
+        # Skip subshell printf used only for sanitization pipelines
+        # e.g. SAFE_X=$(printf '%s' "$VAR" | somecommand)
+        if "$(printf" in line and "|" in line:
             continue
         # Extract all single-quoted segments
         sq_parts = re.findall(r"'([^']*)'" , line)
