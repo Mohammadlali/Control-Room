@@ -62,3 +62,4 @@ This file records every significant change with real commit hashes.
 - `8f82004` - fix: remove commit_comment (unsupported in this repo), keep discussion_comment only.
   - Renamed to: Control-Room AGY Discussion Responder.
   - Discussion tab now supported: post @agy comment in any Discussion to trigger AGY.
+- `0776697` - fix: workflow posts AGY output to Discussion directly via GraphQL (no longer relies on AGY to call APIs).
