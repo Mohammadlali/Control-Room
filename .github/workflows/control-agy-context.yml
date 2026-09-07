@@ -32,7 +32,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh api repos/${{ github.repository }}/commits/${{ github.event.comment.commit_id }}/comments \
-            -f body="🤖 **AGY is on it.** Will reply when done."
+            -f body="AGY is on it. Will reply when done."
 
       - name: Build context prompt
         id: prompt
@@ -109,7 +109,7 @@ except Exception as e:
             printf '%s\n' '     Header: Authorization: Bearer CTRL_TOKEN'
             printf '%s\n' '     Body: title (short descriptive title)'
             printf '%s\n' '     Body: body starting with: @agy'
-            printf '%s\n' '     Then a newline and detailed task description with acceptance criteria.'
+            printf '%s\n' '     Then a newline and detailed task description.'
             printf '%s\n' '  2. Post the new issue URL as a reply on this page.'
             printf '%s\n' '  3. Do NOT do the actual work here. The issue bot will handle it.'
           } > /tmp/prompt.txt
