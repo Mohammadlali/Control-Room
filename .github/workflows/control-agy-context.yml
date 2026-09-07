@@ -1,0 +1,154 @@
+name: Control-Room AGY Context Responder
+
+on:
+  commit_comment:
+    types: [created]
+  discussion_comment:
+    types: [created]
+
+permissions:
+  issues: write
+  contents: read
+  discussions: write
+
+jobs:
+  context-responder:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: >
+      (github.event_name == 'commit_comment' &&
+       startsWith(github.event.comment.body, '@agy') &&
+       github.event.comment.user.type != 'Bot') ||
+      (github.event_name == 'discussion_comment' &&
+       startsWith(github.event.comment.body, '@agy') &&
+       github.event.comment.user.type != 'Bot')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Ack on commit
+        if: github.event_name == 'commit_comment'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api repos/${{ github.repository }}/commits/${{ github.event.comment.commit_id }}/comments \
+            -f body="🤖 **AGY is on it.** Will reply when done."
+
+      - name: Build context prompt
+        id: prompt
+        env:
+          CTRL_TOKEN: ${{ secrets.CONTROL_ROOM_PAT }}
+          USER_COMMENT: ${{ github.event.comment.body }}
+          COMMIT_SHA: ${{ github.event.comment.commit_id }}
+          DISCUSSION_TITLE: ${{ github.event.discussion.title }}
+          DISCUSSION_BODY: ${{ github.event.discussion.body }}
+          DISCUSSION_NUM: ${{ github.event.discussion.number }}
+          DISCUSSION_NODE: ${{ github.event.discussion.node_id }}
+        run: |
+          REPO='mohammadlali0707-stack/Control-Room'
+          sanitize() { sed "s/\`/'/g; s/\"/'/g; s/\$(/DOLLAR(/g; s/\${/DOLLAR{/g"; }
+          SAFE_COMMENT=$(printf '%s' "$USER_COMMENT" | sanitize)
+          EVENT="${{ github.event_name }}"
+
+          if [ "$EVENT" = 'commit_comment' ]; then
+            COMMIT_INFO=$(curl -sf \
+              "https://api.github.com/repos/$REPO/commits/$COMMIT_SHA" \
+              -H "Authorization: Bearer $CTRL_TOKEN" | python3 -c "
+import json,sys
+try:
+    d=json.load(sys.stdin)
+    msg=d.get('commit',{}).get('message','(no message)')
+    files=[f['filename'] for f in d.get('files',[])]
+    st=d.get('stats',{})
+    print('Commit message:',msg)
+    print('Files changed:',', '.join(files[:15]))
+    print('Stats: +%s -%s'%(st.get('additions',0),st.get('deletions',0)))
+except Exception as e:
+    print('(could not fetch commit info):', e)
+" 2>/dev/null | sanitize || printf '%s' '(commit info unavailable)')
+            DIFF=$(git show "$COMMIT_SHA" --stat 2>/dev/null | head -30 | sanitize || printf '%s' '(diff unavailable)')
+            CONTEXT_HEADER="commit $COMMIT_SHA"
+            CONTEXT_BODY="$COMMIT_INFO"
+            REPLY_INST="POST https://api.github.com/repos/$REPO/commits/$COMMIT_SHA/comments -- Header: Authorization: Bearer CTRL_TOKEN -- Body field: body"
+          else
+            SAFE_DT=$(printf '%s' "$DISCUSSION_TITLE" | sanitize)
+            SAFE_DB=$(printf '%s' "$DISCUSSION_BODY" | sanitize)
+            CONTEXT_HEADER="discussion #$DISCUSSION_NUM: $SAFE_DT"
+            CONTEXT_BODY="$SAFE_DB"
+            REPLY_INST="POST https://api.github.com/graphql -- Header: Authorization: Bearer CTRL_TOKEN -- mutation addDiscussionComment(input:{discussionId:\"$DISCUSSION_NODE\",body:\"ANSWER\"})"
+          fi
+
+          {
+            printf '%s\n' '=== CONTEXT MODE ==='
+            printf '%s\n' 'Read context. Answer the question OR create an issue. No other work.'
+            printf '%s\n' ''
+            printf '%s\n' '=== CREDENTIALS ==='
+            printf 'CTRL_TOKEN: %s\n' "$CTRL_TOKEN"
+            printf 'REPO: %s\n' "$REPO"
+            printf '%s\n' ''
+            printf 'CONTEXT TYPE: %s\n' "$CONTEXT_HEADER"
+            printf '%s\n' ''
+            printf '%s\n' "$CONTEXT_BODY"
+            printf '%s\n' ''
+            printf '%s\n' '=== USER COMMENT ==='
+            printf '%s\n' "$SAFE_COMMENT"
+            printf '%s\n' ''
+            printf '%s\n' '=== INSTRUCTIONS ==='
+            printf '%s\n' ''
+            printf '%s\n' 'Determine which case applies:'
+            printf '%s\n' ''
+            printf '%s\n' 'CASE A - User asks a question about the context:'
+            printf '%s\n' '  1. Read context above carefully.'
+            printf '%s\n' '  2. Answer clearly in same language as question (Persian or English).'
+            printf '%s\n' '  3. Post answer via API:'
+            printf '%s\n' "  $REPLY_INST"
+            printf '%s\n' '  4. Do NOT clone repo or run gates.'
+            printf '%s\n' ''
+            printf '%s\n' 'CASE B - User requests a code change or action:'
+            printf '  1. POST https://api.github.com/repos/%s/issues\n' "$REPO"
+            printf '%s\n' '     Header: Authorization: Bearer CTRL_TOKEN'
+            printf '%s\n' '     Body: title (short descriptive title)'
+            printf '%s\n' '     Body: body starting with: @agy'
+            printf '%s\n' '     Then a newline and detailed task description with acceptance criteria.'
+            printf '%s\n' '  2. Post the new issue URL as a reply on this page.'
+            printf '%s\n' '  3. Do NOT do the actual work here. The issue bot will handle it.'
+          } > /tmp/prompt.txt
+          printf 'Prompt: %s lines\n' "$(wc -l < /tmp/prompt.txt)"
+
+      - name: Dispatch to agw-workers
+        id: dispatch
+        env:
+          GH_TOKEN: ${{ secrets.MOHAMMADLALI_PAT }}
+        run: |
+          PROMPT=$(cat /tmp/prompt.txt)
+          gh workflow run agw-worker.yml \
+            --repo Mohammadlali/agw-workers \
+            --field "prompt=$PROMPT" \
+            --field "acc_index=0" \
+            --field "callback_id=cr-ctx-${{ github.run_id }}"
+          sleep 10
+          RUN_ID=$(gh run list --repo Mohammadlali/agw-workers \
+            --workflow agw-worker.yml --limit 1 --json databaseId -q '.[0].databaseId')
+          echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for worker
+        env:
+          GH_TOKEN: ${{ secrets.MOHAMMADLALI_PAT }}
+        run: |
+          RID="${{ steps.dispatch.outputs.run_id }}"
+          for i in $(seq 1 40); do
+            ST=$(gh run view "$RID" --repo Mohammadlali/agw-workers --json status -q '.status')
+            echo "[$i/40] $ST"
+            [ "$ST" = "completed" ] && break
+            sleep 30
+          done
+
+      - name: Log result
+        env:
+          GH_TOKEN: ${{ secrets.MOHAMMADLALI_PAT }}
+        run: |
+          RID="${{ steps.dispatch.outputs.run_id }}"
+          mkdir -p /tmp/agy-out
+          gh run download "$RID" --repo Mohammadlali/agw-workers --dir /tmp/agy-out 2>/dev/null || true
+          OUT=$(find /tmp/agy-out -name "agy_output.txt" | head -1)
+          [ -n "$OUT" ] && head -c 10000 "$OUT" || echo "(no output)"
