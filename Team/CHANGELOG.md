@@ -27,8 +27,10 @@ This file records every significant change with real commit hashes.
 - `c3e46d2` — Fix: remove bash command substitution patterns from prompt (prevent shell injection in agw-worker).
 - `13fb629` — Fix: use heredoc for prompt (broken - YAML indentation issue).
 - `7cb6354` — Fix: use printf with single-quoted static text - no heredoc YAML issues, no double-quote injection.
-  - Root cause chain resolved: $(gh) -> $(curl) -> heredoc YAML break -> " in PROMPT string.
-  - Impact: AGY checklist + real-time ticking + final report fully operational (verified Issue #25).
+  - Root cause chain resolved: $(gh) -> $(curl) -> heredoc YAML break -> double-quote PROMPT injection.
+  - Impact: AGY checklist + real-time ticking + final report fully operational.
+- `6599040` — test: add hello_test.md and verify checklist & report format (Issue #25) [AGY commit].
+- `a317416` — docs: add Persian summary report for Issue #25 [AGY commit].
 - `c865d33` — refactor: move Team/hello_test.md to Team/tests/ (cleanup).
 - `00bda18` — refactor: move Team/pipeline_test.md to Team/tests/ (cleanup).
 - `464067c` — refactor: delete Team/hello_test.md (original, now in Team/tests/).
