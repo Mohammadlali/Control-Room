@@ -58,3 +58,6 @@ This file records every significant change with real commit hashes.
 - `7cb6354`
   - **Workflow printf formatting:** Switched prompt generation to `printf` with single-quoted static text in `control-agy.yml` to avoid heredoc YAML indentation conflicts.
   - **Impact:** Ensures clean YAML parsing and eliminates injection vectors.
+- `6599040`
+  - **Verification test for Issue #25:** Created `Team/hello_test.md`, verified real-time checklist and report format protocol, recorded unrecorded commits `c3e46d2..7cb6354`, updated living documentation (`Team/WHERE_WE_ARE.md`, `Team/MAP.md`), and confirmed 6/6 gates passing.
+  - **Impact:** Confirms AGY Issue Bot executes safely and sequentially with live checklist updates after shell injection fix.
