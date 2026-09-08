@@ -24,14 +24,12 @@ jobs:
       - name: Build context prompt
         id: prompt
         env:
-          CTRL_TOKEN: ${{ secrets.CONTROL_ROOM_PAT }}
           USER_COMMENT: ${{ github.event.comment.body }}
           DISCUSSION_TITLE: ${{ github.event.discussion.title }}
           DISCUSSION_BODY: ${{ github.event.discussion.body }}
           DISCUSSION_NUM: ${{ github.event.discussion.number }}
           DISCUSSION_NODE: ${{ github.event.discussion.node_id }}
         run: |
-          REPO='mohammadlali0707-stack/Control-Room'
           sanitize() { sed "s/\`/'/g; s/\"/'/g; s/\$(/DOLLAR(/g; s/\${/DOLLAR{/g"; }
           SAFE_COMMENT=$(printf '%s' "$USER_COMMENT" | sanitize)
           SAFE_DT=$(printf '%s' "$DISCUSSION_TITLE" | sanitize)
@@ -58,16 +56,17 @@ jobs:
             printf '%s\n' '  Output only the answer. The workflow will post it automatically.'
             printf '%s\n' ''
             printf '%s\n' 'CASE B - User is requesting a code change or task:'
-            printf '%s\n' '  Create a GitHub issue using this API:'
-            printf '%s\n' '  Method: POST'
-            printf '  URL: https://api.github.com/repos/%s/issues\n' "$REPO"
-            printf '%s\n' '  Header - Authorization: Bearer CTRL_TOKEN_VALUE'
-            printf '  CTRL_TOKEN_VALUE = %s\n' "$CTRL_TOKEN"
-            printf '%s\n' '  Issue title: short descriptive title'
-            printf '%s\n' '  Issue body: first line must be @agy, then detailed task description'
-            printf '%s\n' '  After creating the issue, output only: Issue created at <URL>'
+            printf '%s\n' '  You have NO git credential and NO GitHub API token in your environment --'
+            printf '%s\n' '  do not attempt to authenticate to GitHub, and do not ask for a token.'
+            printf '%s\n' '  You cannot create an issue yourself. Instead output a proposal in exactly'
+            printf '%s\n' '  this form:'
+            printf '%s\n' '  ISSUE PROPOSAL: <short title>'
+            printf '%s\n' '  <detailed task description>'
+            printf '%s\n' '  A human will review and create the issue from this text.'
           } > /tmp/prompt.txt
           printf 'Prompt: %s lines\n' "$(wc -l < /tmp/prompt.txt)"
+          DISC_IDX=$(( DISCUSSION_NUM % 9 ))
+          echo "acc_index=$DISC_IDX" >> "$GITHUB_OUTPUT"
 
       - name: Dispatch to agw-workers
         id: dispatch
@@ -78,7 +77,7 @@ jobs:
           gh workflow run agw-worker.yml \
             --repo Mohammadlali/agw-workers \
             --field "prompt=$PROMPT" \
-            --field "acc_index=0" \
+            --field "acc_index=${{ steps.prompt.outputs.acc_index }}" \
             --field "callback_id=cr-disc-${{ github.run_id }}"
           sleep 10
           RUN_ID=$(gh run list --repo Mohammadlali/agw-workers \
@@ -110,8 +109,6 @@ jobs:
           else
             printf '%s\n' '(AGY produced no output)' > /tmp/final.txt
           fi
-          echo "Output size: $(wc -c < /tmp/final.txt) bytes"
-          head -5 /tmp/final.txt
 
       - name: Post reply to Discussion
         env:
