@@ -1,0 +1,65 @@
+name: Set ACC6's deploy-status-feed.yml schedule interval (cross-account)
+
+# GitHub Actions' documented floor for `schedule:` cron is 5 minutes --
+# shorter intervals parse but are not reliably honored. This sets the
+# fastest interval GitHub actually supports, rather than guessing at a
+# smaller number that would silently not run as often as it claims.
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  set-schedule:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DST_TOKEN: ${{ secrets.ACC6 }}
+    steps:
+      - name: Guard
+        run: |
+          if [ -z "$DST_TOKEN" ]; then
+            echo "::error::secrets.ACC6 is not set on this repo."
+            exit 1
+          fi
+
+      - name: Clone ACC6's Claud-Cloud-Project directly
+        run: |
+          set -e
+          AUTH_HEADER="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$DST_TOKEN" | base64 -w0)"
+          git -c http.https://github.com/.extraHeader="$AUTH_HEADER" \
+            clone --branch claude/gateway-auth-fix-nr7k0b --single-branch \
+            "https://github.com/mohammadlali0707-stack/Claud-Cloud-Project.git" /tmp/ccp
+
+      - name: Change the schedule from every 30 minutes to every 5
+        working-directory: /tmp/ccp
+        run: |
+          set -e
+          sed -i "s|- cron: '\*/30 \* \* \* \*'|- cron: '*/5 * * * *'|" .github/workflows/deploy-status-feed.yml
+
+          echo "=== Read the property back ==="
+          grep -qF -- "*/30 * * * *" .github/workflows/deploy-status-feed.yml && { echo "::error::still on the 30-minute schedule"; exit 1; }
+          grep -qF -- "*/5 * * * *" .github/workflows/deploy-status-feed.yml || { echo "::error::never got the 5-minute schedule"; exit 1; }
+          echo "Schedule verified changed."
+
+          if git diff --quiet; then
+            echo "No diff -- already on 5 minutes."
+            echo "ALREADY_DONE=true" >> "$GITHUB_ENV"
+          else
+            echo "ALREADY_DONE=false" >> "$GITHUB_ENV"
+          fi
+
+      - name: Record and push
+        if: env.ALREADY_DONE == 'false'
+        working-directory: /tmp/ccp
+        run: |
+          set -e
+          {
+            echo ""
+            echo "- \`(this repo's hash follows in a \\\`changelog:\\\` follow-up)\` -- owner asked for the status feed to refresh faster than every 30 minutes; changed \`deploy-status-feed.yml\`'s schedule to \`*/5 * * * *\`, the fastest interval GitHub Actions actually honors for scheduled workflows (shorter intervals parse but are not reliably run). Applied cross-account from \`Mohammadlali/control-room\`."
+          } >> Team/CHANGELOG.md
+          git config user.email "control-room-bot@claud-cloud.local"
+          git config user.name "Control Room Bot"
+          git add .github/workflows/deploy-status-feed.yml Team/CHANGELOG.md
+          git commit -m "Speed up status feed schedule from 30 to 5 minutes"
+          AUTH_HEADER="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$DST_TOKEN" | base64 -w0)"
+          git -c http.https://github.com/.extraHeader="$AUTH_HEADER" push origin HEAD:claude/gateway-auth-fix-nr7k0b
