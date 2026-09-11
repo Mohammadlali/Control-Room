@@ -1,0 +1,77 @@
+name: Check a Mohammadlali/status-dashboard Actions run's real outcome
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "The workflow run ID on Mohammadlali/status-dashboard to check (leave empty to auto-find the latest deploy-status-feed.yml run)"
+        required: false
+        default: ""
+        type: string
+      dump_full_log:
+        description: "Print the ENTIRE job log, even if it succeeded"
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 13
+    env:
+      GH_TOKEN: ${{ secrets.ACC0 }}
+    steps:
+      - name: Guard
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::secrets.ACC0 is not set on this repo."
+            exit 1
+          fi
+
+      - name: Resolve run_id
+        id: resolve
+        run: |
+          set -e
+          RUN_ID="${{ inputs.run_id }}"
+          if [ -z "$RUN_ID" ]; then
+            RUN_ID=$(gh run list --repo Mohammadlali/status-dashboard --workflow deploy-status-feed.yml --limit 1 --json databaseId --jq '.[0].databaseId')
+            echo "Auto-resolved latest run: $RUN_ID"
+          fi
+          echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Poll for completion
+        run: |
+          set -e
+          RUN_ID="${{ steps.resolve.outputs.run_id }}"
+          for i in $(seq 1 40); do
+            STATUS=$(gh run view "$RUN_ID" --repo Mohammadlali/status-dashboard --json status,conclusion --jq '.status + " " + (.conclusion // "null")')
+            echo "poll $i: $STATUS"
+            case "$STATUS" in
+              completed*) break ;;
+            esac
+            sleep 15
+          done
+
+      - name: Report full result
+        run: |
+          set -e
+          RUN_ID="${{ steps.resolve.outputs.run_id }}"
+          gh run view "$RUN_ID" --repo Mohammadlali/status-dashboard
+          echo "=== jobs ==="
+          gh run view "$RUN_ID" --repo Mohammadlali/status-dashboard --json jobs --jq '.jobs[] | .name + ": " + .conclusion'
+
+      - name: Dump the entire job log if asked
+        if: inputs.dump_full_log
+        run: |
+          RUN_ID="${{ steps.resolve.outputs.run_id }}"
+          gh run view "$RUN_ID" --repo Mohammadlali/status-dashboard --log
+
+      - name: If it failed, print the failing log
+        run: |
+          RUN_ID="${{ steps.resolve.outputs.run_id }}"
+          CONCLUSION=$(gh run view "$RUN_ID" --repo Mohammadlali/status-dashboard --json conclusion --jq '.conclusion')
+          if [ "$CONCLUSION" != "success" ]; then
+            gh run view "$RUN_ID" --repo Mohammadlali/status-dashboard --log-failed || true
+            exit 1
+          fi
+          echo "Run succeeded."
