@@ -75,7 +75,7 @@ This file records every significant change with real commit hashes.
   the first red gate encountered while adopting this repo as the canonical,
   central Control-Room (see the same session's entries below for why).
 
-- `(pending)` — feat: rebuild this repo's identity as the org's ONE canonical
+- `35cc8ae` — feat: rebuild this repo's identity as the org's ONE canonical
   Control-Room, hosted on `ACC0`/`Mohammadlali` (owner's direct instruction,
   2026-09-11). README.md, AGENTS.md, MAP.md and WHERE_WE_ARE.md no longer
   describe this repo as belonging to `07`/`mohammadlali0707-stack` -- that
@@ -103,3 +103,6 @@ This file records every significant change with real commit hashes.
   or lands on the correct project's own repo automatically -- it no longer
   matters which account happened to win the old `ISSUE_NUM % 9` round-robin
   for a TBS or AirboxVIP question.
+
+- `a450f8d` — chore: remove a committed __pycache__ file from the
+  previous commit and add .gitignore so it cannot happen again.
