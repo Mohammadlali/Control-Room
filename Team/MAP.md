@@ -7,11 +7,23 @@
 
 ## CURRENT STATE (Overview)
 
+**2026-09-11 -- this repo (`Mohammadlali/Control-Room`, on `ACC0`) is now
+the org's ONE canonical Control-Room, owner's direct instruction.** Until
+this date its own docs described themselves as belonging to `ACC6`/`07`
+(`mohammadlali0707-stack`) -- a second, now-superseded Control-Room that
+lived there. That repo is being retired; see `Team/CHANGELOG.md` for the
+deletion attempt. Do not trust any reference below this block that still
+says `mohammadlali0707-stack/Control-Room` -- read `Team/COMPANY_SCOPE.md`
+for the current, correct account map instead of assuming this file's older
+rows are current.
+
 | Workstream | Status | Lead / Runner | Target Repo |
 |------------|--------|---------------|-------------|
-| 1. Control-Room Core & Gates | ACTIVE | Local / AGY Bot / MCP | `mohammadlali0707-stack/Control-Room` |
-| 2. Cloud Runner Workflows | OPERATIONAL | GitHub Actions / AGY | `mohammadlali0707-stack/agw-workers` |
-| 3. Project Integrations (Tehran City) | ACTIVE | TBD | Account 1997 repo |
+| 1. Control-Room Core & Gates | ACTIVE | Local / AGY Bot / MCP | `Mohammadlali/Control-Room` (this repo, on `ACC0`) |
+| 2. Cloud Runner Workflows | OPERATIONAL | GitHub Actions / AGY | `Mohammadlali/agw-workers` + the other 8 accounts' `agw-workers` |
+| 3. Topic-based issue routing | BUILT 2026-09-11 | `Tools/route_topic.py` via `control-agy.yml` | this repo |
+| 4. Project Integrations (TEHRAN: BLIND SPOT) | ACTIVE, hosted elsewhere | TBD | `mohammadlali0707-stack/Claud-Cloud-Project` (`ACC6`/`07`) -- the ONLY home for TBS as of 2026-09-11; `ACC0`'s own former copy is retiring |
+| 5. Project Integrations (AirboxVIP Coffeenet) | ACTIVE, hosted elsewhere | TBD | `momonakikugava-pixel/AirboxVIP_Coffeenet` (`ACC1`/Momona) |
 
 ---
 
@@ -48,9 +60,37 @@
 ## 2. Cloud Runners & Workers
 - Integration with `agw-workers` for distributed background task execution.
 - 99-slot batch dispatch ready (`.github/workflows/batch-dispatch.yml`).
-- Task intake driven directly by AGY Issue bot triggers.
+- Task intake driven directly by AGY Issue bot triggers, now topic-routed
+  first (see workstream 3 below) rather than always executed locally.
 
 ---
 
-## 3. Project Integrations
-- Tehran City (Game development project on Account 1997 repo)
+## 3. Topic-based issue routing (built 2026-09-11)
+- `Tools/route_topic.py` classifies every incoming issue against
+  `Team/company_scope.json`: label first (`project:tbs`, `project:
+  airboxvip`, `project:control-room`), keyword match second, and refuses to
+  guess when nothing or too much matches (`Tools/probe_route_topic.py`
+  proves all three paths).
+- `.github/workflows/control-agy.yml`'s "Route by topic" step runs this
+  before the Ack comment, so the owner sees where an issue is headed
+  immediately, not after a worker already ran on the wrong account.
+- A non-local decision forwards the issue as a fresh `@agy` issue on the
+  target project's own host repo, using that account's own PAT (never
+  ACC0's), then closes the Control-Room copy with a link to where the real
+  work is tracked.
+- `Tools/check_company_scope.py` keeps `Team/COMPANY_SCOPE.md` (human) and
+  `Team/company_scope.json` (machine) from silently drifting apart.
+
+---
+
+## 4. Project Integrations
+- **TEHRAN: BLIND SPOT** -- hosted exclusively on `mohammadlali0707-stack/
+  Claud-Cloud-Project` (`ACC6`/`07`) as of 2026-09-11. `ACC0`'s own former
+  copy of this repo is retiring; any TBS change still made there because a
+  live session is already open must be merged into `ACC6`'s copy
+  immediately, not left to diverge.
+- **AirboxVIP Coffeenet** -- hosted on `momonakikugava-pixel/
+  AirboxVIP_Coffeenet` (`ACC1`/Momona).
+- See `Team/COMPANY_SCOPE.md` for the full per-account scope table,
+  including which accounts currently host no project of their own and only
+  serve as TBS domain-ring workers.

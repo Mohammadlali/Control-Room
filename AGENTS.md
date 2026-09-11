@@ -1,7 +1,16 @@
-# Agent Rules for Control-Room (07-Stack)
+# Agent Rules for Control-Room (`ACC0`/`Mohammadlali`, the org's management account)
 
 Applies to every agent, manager, and tool interacting with this repository.
 The non-negotiable laws below are written once here and enforced mechanically.
+
+## 0. Scope: what belongs here, and what never does
+
+`ACC0` does management only. Anything that is another project's actual
+code, content, or feature work belongs in that project's own host repo, not
+here -- see `Team/COMPANY_SCOPE.md`. An issue opened here is routed by
+`Tools/route_topic.py` before any work starts: local for Control-Room
+topics, forwarded elsewhere for anything else. Never hand-execute a
+forwarded project's task in this repo just because it was easier that turn.
 
 ---
 

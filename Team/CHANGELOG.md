@@ -69,3 +69,37 @@ This file records every significant change with real commit hashes.
 - `4781d62` - feat: add Tools/install_hooks.sh - one-command hook activation.
 - `3c065b7` - feat: register check_workflow_safety as gate 7 in run_gates.py.
 - `8cecf54` - fix: check_workflow_safety - exclude tr/sed lines from printf double-quote check (false positive fix).
+- `353554f` - docs: add Team/SECURITY_RULES.md (agent-agnostic GitHub Actions
+  security). Recorded retroactively by the ACC0-hosted Control-Room rebuild
+  session -- this entry was missing, which is what made `check_changelog.py`
+  the first red gate encountered while adopting this repo as the canonical,
+  central Control-Room (see the same session's entries below for why).
+
+- `(pending)` — feat: rebuild this repo's identity as the org's ONE canonical
+  Control-Room, hosted on `ACC0`/`Mohammadlali` (owner's direct instruction,
+  2026-09-11). README.md, AGENTS.md, MAP.md and WHERE_WE_ARE.md no longer
+  describe this repo as belonging to `07`/`mohammadlali0707-stack` -- that
+  was a second, now-superseded Control-Room, being deleted separately (see
+  the next entry below for that attempt's outcome). Added
+  `Team/COMPANY_SCOPE.md` + `Team/company_scope.json`: which of ACC0-ACC8
+  hosts which project (TBS only on ACC6, AirboxVIP only on ACC1, ACC0
+  management-only, the rest currently TBS ring-workers with no project of
+  their own). Added `Tools/route_topic.py` (deterministic label-then-
+  keyword classifier, refuses to guess on a tie or an unknown label),
+  `Tools/probe_route_topic.py` (7 cases, all pass), and
+  `Tools/check_company_scope.py` (keeps the .md and .json twins from
+  drifting apart) -- wired into `Tools/run_gates.py` as gates 9-10.
+  Rewrote `.github/workflows/control-agy.yml`: a new "Route by topic" step
+  runs before the Ack comment; a Control-Room-topic issue dispatches
+  exactly as before (round-robin across ACC0-ACC8's own `agw-workers`), a
+  recognized other-project issue is forwarded as a fresh `@agy` issue on
+  that project's own host repo using that account's own PAT and the
+  Control-Room copy is closed with a link, and an unclear topic gets a
+  comment asking for a `project:` label instead of any dispatch at all.
+  Also fixed two pre-existing gate failures found while rebuilding this:
+  a missing CHANGELOG entry for `353554f`, and two `CHECK-1` (double-quote
+  in printf content) violations in the old control-agy.yml prompt text.
+  Impact: any issue opened on Control-Room from now on either stays here
+  or lands on the correct project's own repo automatically -- it no longer
+  matters which account happened to win the old `ISSUE_NUM % 9` round-robin
+  for a TBS or AirboxVIP question.

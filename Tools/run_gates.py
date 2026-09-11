@@ -27,6 +27,8 @@ GATES = [
     ("check_source_quality",  [sys.executable, os.path.join(ROOT, "Tools", "check_source_quality.py")]),
     ("check_issue_protocol",  [sys.executable, os.path.join(ROOT, "Tools", "check_issue_protocol.py")]),
     ("check_workflow_safety", [sys.executable, os.path.join(ROOT, "Tools", "check_workflow_safety.py")]),
+    ("check_company_scope",   [sys.executable, os.path.join(ROOT, "Tools", "check_company_scope.py")]),
+    ("probe_route_topic",     [sys.executable, os.path.join(ROOT, "Tools", "probe_route_topic.py")]),
 ]
 
 

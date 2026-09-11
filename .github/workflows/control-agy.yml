@@ -1,5 +1,17 @@
 name: Control-Room AGY Issue Bot
 
+# Topic-routed as of 2026-09-11 (owner's instruction): an issue opened here
+# is no longer always executed locally. Tools/route_topic.py classifies it
+# first, against Team/company_scope.json:
+#   - "control-room" -> unchanged behaviour below, dispatched round-robin
+#     across ACC0..ACC8's own agw-workers fleet.
+#   - any other project (tbs -> ACC6, airboxvip -> ACC1, ...) -> FORWARDED
+#     as a fresh @agy issue on that project's own host repo, using that
+#     account's own PAT. This repo never executes another project's work
+#     itself -- see Team/COMPANY_SCOPE.md's "two hard rules".
+#   - "unclear" -> no dispatch at all. The router refuses to guess; the
+#     issue gets a comment asking for a `project:` label instead.
+
 on:
   issues:
     types: [opened]
@@ -28,17 +40,95 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Route by topic
+        id: route
+        if: github.event_name != 'workflow_dispatch'
+        env:
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_LABELS: ${{ join(github.event.issue.labels.*.name, ',') }}
+        run: |
+          python3 Tools/route_topic.py \
+            --title "$ISSUE_TITLE" --body "$ISSUE_BODY" --labels "$ISSUE_LABELS" \
+            > /tmp/route.json
+          cat /tmp/route.json
+          DECISION=$(jq -r '.decision' /tmp/route.json)
+          PROJECT=$(jq -r '.project // ""' /tmp/route.json)
+          echo "decision=$DECISION" >> "$GITHUB_OUTPUT"
+          echo "project=$PROJECT" >> "$GITHUB_OUTPUT"
+          if [ "$DECISION" = "route" ] && [ "$PROJECT" != "control-room" ]; then
+            HOST_ACCOUNT=$(jq -r '.host_account' /tmp/route.json)
+            HOST_REPO=$(jq -r '.host_repo' /tmp/route.json)
+            HOST_LOGIN=$(jq -r --arg acc "$HOST_ACCOUNT" '.accounts[$acc].login' Team/company_scope.json)
+            echo "host_account=$HOST_ACCOUNT" >> "$GITHUB_OUTPUT"
+            echo "host_repo=$HOST_REPO" >> "$GITHUB_OUTPUT"
+            echo "host_login=$HOST_LOGIN" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Ack
         if: github.event_name != 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DECISION: ${{ steps.route.outputs.decision }}
+          PROJECT: ${{ steps.route.outputs.project }}
+          HOST_LOGIN: ${{ steps.route.outputs.host_login }}
+          HOST_REPO: ${{ steps.route.outputs.host_repo }}
         run: |
+          if [ "$DECISION" = "unclear" ]; then
+            BODY='Could not tell which project this is about. Add a `project:` label (`project:tbs`, `project:airboxvip`, or `project:control-room`) and reopen with a new `@agy` comment -- see Team/COMPANY_SCOPE.md.'
+          elif [ "$PROJECT" != "control-room" ]; then
+            BODY="Routed to $PROJECT ($HOST_LOGIN/$HOST_REPO) -- forwarding now, will link the mirrored issue here."
+          else
+            BODY='AGY is on it. Will reply when done.'
+          fi
           gh issue comment "${{ github.event.issue.number }}" \
             --repo "${{ github.repository }}" \
-            --body "AGY is on it. Will reply when done."
+            --body "$BODY"
+
+      - name: Forward to another project's repo
+        id: forward
+        if: github.event_name != 'workflow_dispatch' && steps.route.outputs.decision == 'route' && steps.route.outputs.project != 'control-room'
+        env:
+          HOST_LOGIN: ${{ steps.route.outputs.host_login }}
+          HOST_REPO: ${{ steps.route.outputs.host_repo }}
+          HOST_ACCOUNT: ${{ steps.route.outputs.host_account }}
+          ISSUE_NUM: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ACC0_PAT: ${{ secrets.ACC0_PAT }}
+          ACC1_PAT: ${{ secrets.ACC1_PAT }}
+          ACC2_PAT: ${{ secrets.ACC2_PAT }}
+          ACC3_PAT: ${{ secrets.ACC3_PAT }}
+          ACC4_PAT: ${{ secrets.ACC4_PAT }}
+          ACC5_PAT: ${{ secrets.ACC5_PAT }}
+          ACC6_PAT: ${{ secrets.ACC6_PAT }}
+          ACC7_PAT: ${{ secrets.ACC7_PAT }}
+          ACC8_PAT: ${{ secrets.ACC8_PAT }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          eval "TOKEN=\$${HOST_ACCOUNT}_PAT"
+          sanitize() { sed "s/\`/'/g; s/\"/'/g; s/\$(/DOLLAR(/g; s/\${/DOLLAR{/g"; }
+          SAFE_TITLE=$(printf '%s' "$ISSUE_TITLE" | tr -d '`\\$')
+          SAFE_BODY=$(printf '%s' "$ISSUE_BODY" | sanitize)
+          {
+            printf '@agy %s\n\n' "$SAFE_TITLE"
+            printf '%s\n\n' "$SAFE_BODY"
+            printf '_Forwarded from Control-Room#%s by the topic router (Team/route_topic.py)._\n' "$ISSUE_NUM"
+          } > /tmp/forward_body.txt
+          FWD_URL=$(GH_TOKEN="$TOKEN" gh issue create \
+            --repo "$HOST_LOGIN/$HOST_REPO" \
+            --title "$SAFE_TITLE" \
+            --body-file /tmp/forward_body.txt)
+          echo "forward_url=$FWD_URL" >> "$GITHUB_OUTPUT"
+          gh issue comment "$ISSUE_NUM" --repo "${{ github.repository }}" \
+            --body "Forwarded: $FWD_URL"
+          gh issue close "$ISSUE_NUM" --repo "${{ github.repository }}" \
+            --reason "not planned" \
+            --comment "Tracked at $FWD_URL from here on -- closing the Control-Room copy, not the work."
 
       - name: Build prompt
         id: prompt
+        if: steps.route.outputs.decision != 'unclear' && steps.route.outputs.project != 'tbs' && steps.route.outputs.project != 'airboxvip'
         env:
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_BODY: ${{ github.event.issue.body }}
@@ -53,7 +143,7 @@ jobs:
           README=$(cat README.md 2>/dev/null | sanitize | head -50 || printf '%s' '(not found)')
           {
             printf '%s\n' 'You are AGY, an AI software engineer for Control-Room.'
-            printf '%s\n' 'Control-Room is an autonomous infrastructure for managing GitHub projects with AI.'
+            printf '%s\n' 'Control-Room is the central management repo for a 9-account GitHub org (ACC0-ACC8). ACC0 handles management only; no other project ever runs here.'
             printf 'Active branch: %s\n' "$BRANCH"
             printf '%s\n' ''
             printf '%s\n' '=== WORKING TREE ==='
@@ -63,7 +153,7 @@ jobs:
             printf '%s\n' 'then run:'
             printf '%s\n' "  git config user.email 'agy-bot@control-room.local'"
             printf '%s\n' "  git config user.name 'AGY Bot'"
-            printf '%s\n' '  git add -A && git commit -m "<message>"'
+            printf '%s\n' "  git add -A && git commit -m 'message'"
             printf '%s\n' 'Do NOT run git push and do NOT call any GitHub API yourself -- the pipeline'
             printf '%s\n' 'running you pushes your commit and posts your final output as the issue'
             printf '%s\n' 'comment on its own, after you finish, using a credential you never see.'
@@ -86,7 +176,7 @@ jobs:
             printf '%s\n' 'STEP 1: Implement the task.'
             printf '%s\n' 'STEP 2: python3 Tools/run_gates.py (must pass).'
             printf '%s\n' 'STEP 3: Update Team/CHANGELOG.md'
-            printf '%s\n' 'STEP 4: git add -A && git commit -m "<message>"  (no push -- see above)'
+            printf '%s\n' "STEP 4: git add -A && git commit -m 'message'  (no push -- see above)"
             printf '%s\n' 'STEP 5: Print a final report to stdout, including the commit hash you made.'
           } > /tmp/prompt.txt
           ACC_IDX=$(( ISSUE_NUM % 9 ))
@@ -94,6 +184,7 @@ jobs:
 
       - name: Dispatch, wait and collect
         id: dispatch
+        if: steps.prompt.outcome == 'success'
         env:
           ACC0_PAT: ${{ secrets.ACC0_PAT }}
           ACC1_PAT: ${{ secrets.ACC1_PAT }}
@@ -123,7 +214,7 @@ jobs:
           gh workflow run agw-worker.yml \
             --repo "$DISPATCH_REPO" \
             --field "prompt=$PROMPT" \
-            --field "target_repo=mohammadlali0707-stack/Control-Room" \
+            --field "target_repo=Mohammadlali/Control-Room" \
             --field "target_branch=main" \
             --field "acc_index=$(( ACC_IDX + 1 ))" \
             --field "callback_id=cr-${{ github.event.issue.number }}-${{ github.run_id }}"
@@ -146,7 +237,7 @@ jobs:
           [ -n "$OUT" ] && head -c 58000 "$OUT" > /tmp/final.txt || printf '%s\n' '(no output)' > /tmp/final.txt
 
       - name: Post result
-        if: github.event_name != 'workflow_dispatch'
+        if: github.event_name != 'workflow_dispatch' && steps.dispatch.outcome == 'success'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
