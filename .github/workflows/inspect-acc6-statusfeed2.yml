@@ -1,0 +1,41 @@
+name: Inspect ACC6 StatusFeed source pt2 (deploy yml + script head, cross-account read-only)
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      DST_TOKEN: ${{ secrets.ACC6 }}
+    steps:
+      - name: Clone ACC6's Claud-Cloud-Project directly
+        run: |
+          set -e
+          AUTH_HEADER="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$DST_TOKEN" | base64 -w0)"
+          git -c http.https://github.com/.extraHeader="$AUTH_HEADER" \
+            clone --branch claude/gateway-auth-fix-nr7k0b --single-branch \
+            "https://github.com/mohammadlali0707-stack/Claud-Cloud-Project.git" /tmp/ccp
+
+      - name: Line counts
+        run: |
+          wc -l /tmp/ccp/.github/workflows/deploy-status-feed.yml /tmp/ccp/Tools/collect_status_feed.py
+
+      - name: Print deploy-status-feed.yml ONLY
+        run: |
+          echo "===== deploy-status-feed.yml ====="
+          cat /tmp/ccp/.github/workflows/deploy-status-feed.yml
+          echo "===== END deploy-status-feed.yml ====="
+
+      - name: Print collect_status_feed.py head (first 130 lines)
+        run: |
+          echo "===== collect_status_feed.py HEAD (1-130) ====="
+          sed -n '1,130p' /tmp/ccp/Tools/collect_status_feed.py
+          echo "===== END HEAD ====="
+
+      - name: Print collect_status_feed.py mid (131-260)
+        run: |
+          echo "===== collect_status_feed.py MID (131-260) ====="
+          sed -n '131,260p' /tmp/ccp/Tools/collect_status_feed.py
+          echo "===== END MID ====="
