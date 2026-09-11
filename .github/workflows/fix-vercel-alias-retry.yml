@@ -54,7 +54,7 @@ jobs:
 
           echo "=== Read the property back ==="
           grep -qF -- "ALIAS_OK=false" .github/workflows/deploy-status-feed.yml || { echo "::error::retry loop never landed"; exit 1; }
-          grep -qF -- '|| true' .github/workflows/deploy-status-feed.yml && { echo "::error::old silent-failure pattern still present"; exit 1; }
+          grep -qF -- 'alias set "$DEPLOY_URL" "$SUBDOMAIN" --token="$VERCEL_TOKEN" || true' .github/workflows/deploy-status-feed.yml && { echo "::error::old silent-failure pattern still present"; exit 1; }
           echo "Retry loop verified present, old silent-failure pattern verified gone."
 
           if git diff --quiet; then
