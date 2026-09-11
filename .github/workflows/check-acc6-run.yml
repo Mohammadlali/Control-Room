@@ -49,7 +49,7 @@ jobs:
           gh run view "$RUN_ID" --repo mohammadlali0707-stack/Claud-Cloud-Project --json jobs --jq '.jobs[] | .name + ": " + .conclusion'
 
       - name: Dump the entire job log if asked
-        if: inputs.dump_full_log == 'true'
+        if: inputs.dump_full_log
         run: |
           RUN_ID="${{ inputs.run_id }}"
           gh run view "$RUN_ID" --repo mohammadlali0707-stack/Claud-Cloud-Project --log
