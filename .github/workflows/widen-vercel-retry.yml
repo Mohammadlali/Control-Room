@@ -1,1 +1,84 @@
-# see local generation; content verified byte-identical before push
+name: Widen Vercel alias retry budget on ACC6 (cross-account)
+
+# First retry attempt (added earlier today) worked exactly as designed --
+# 6 clean attempts with proper backoff, real failure reported instead of
+# a silent false-success -- but Vercel's actual propagation delay for
+# this deployment exceeded the 60s total retry budget (confirmed from
+# the raw log, run 34622043309: `vercel deploy --prebuilt` itself took
+# ~3 minutes to return the URL, and the alias still was not ready a full
+# minute after that). Widening to 24 attempts * 15s = 6 minutes, well
+# inside deploy-status-feed.yml's 15-minute job timeout.
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  fix-on-acc6:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DST_TOKEN: ${{ secrets.ACC6 }}
+    steps:
+      - name: Guard
+        run: |
+          if [ -z "$DST_TOKEN" ]; then
+            echo "::error::secrets.ACC6 is not set on this repo."
+            exit 1
+          fi
+
+      - name: Clone ACC6's Claud-Cloud-Project directly
+        run: |
+          set -e
+          AUTH_HEADER="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$DST_TOKEN" | base64 -w0)"
+          git -c http.https://github.com/.extraHeader="$AUTH_HEADER" \
+            clone --branch claude/gateway-auth-fix-nr7k0b --single-branch \
+            "https://github.com/mohammadlali0707-stack/Claud-Cloud-Project.git" /tmp/ccp
+
+      - name: Widen the alias retry budget
+        working-directory: /tmp/ccp
+        run: |
+          set -e
+          echo "ICAgICAgICAgIEFMSUFTX09LPWZhbHNlCiAgICAgICAgICBmb3IgYXR0ZW1wdCBpbiAxIDIgMyA0IDUgNjsgZG8KICAgICAgICAgICAgaWYgbnB4IC0teWVzIHZlcmNlbCBhbGlhcyBzZXQgIiRERVBMT1lfVVJMIiAiJFNVQkRPTUFJTiIgLS10b2tlbj0iJFZFUkNFTF9UT0tFTiI7IHRoZW4KICAgICAgICAgICAgICBBTElBU19PSz10cnVlCiAgICAgICAgICAgICAgYnJlYWsKICAgICAgICAgICAgZmkKICAgICAgICAgICAgZWNobyAiQWxpYXMgYXR0ZW1wdCAkYXR0ZW1wdCBmYWlsZWQgKGRlcGxveW1lbnQgbGlrZWx5IG5vdCByZWFkeSB5ZXQpOyByZXRyeWluZyBpbiAxMHMuLi4iCiAgICAgICAgICAgIHNsZWVwIDEwCiAgICAgICAgICBkb25lCiAgICAgICAgICBpZiBbICIkQUxJQVNfT0siICE9ICJ0cnVlIiBdOyB0aGVuCiAgICAgICAgICAgIGVjaG8gIjo6ZXJyb3I6OkNvdWxkIG5vdCBhc3NpZ24gZG9tYWluIGFsaWFzIGFmdGVyIDYgYXR0ZW1wdHM7ICRTVUJET01BSU4gc3RpbGwgcG9pbnRzIGF0IHRoZSBwcmV2aW91cyBkZXBsb3ltZW50LiIKICAgICAgICAgICAgZXhpdCAxCiAgICAgICAgICBmaQo=" | base64 -d > /tmp/old_block2.txt
+          echo "ICAgICAgICAgIEFMSUFTX09LPWZhbHNlCiAgICAgICAgICBmb3IgYXR0ZW1wdCBpbiAkKHNlcSAxIDI0KTsgZG8KICAgICAgICAgICAgaWYgbnB4IC0teWVzIHZlcmNlbCBhbGlhcyBzZXQgIiRERVBMT1lfVVJMIiAiJFNVQkRPTUFJTiIgLS10b2tlbj0iJFZFUkNFTF9UT0tFTiI7IHRoZW4KICAgICAgICAgICAgICBBTElBU19PSz10cnVlCiAgICAgICAgICAgICAgYnJlYWsKICAgICAgICAgICAgZmkKICAgICAgICAgICAgZWNobyAiQWxpYXMgYXR0ZW1wdCAkYXR0ZW1wdCBmYWlsZWQgKGRlcGxveW1lbnQgbGlrZWx5IG5vdCByZWFkeSB5ZXQpOyByZXRyeWluZyBpbiAxNXMuLi4iCiAgICAgICAgICAgIHNsZWVwIDE1CiAgICAgICAgICBkb25lCiAgICAgICAgICBpZiBbICIkQUxJQVNfT0siICE9ICJ0cnVlIiBdOyB0aGVuCiAgICAgICAgICAgIGVjaG8gIjo6ZXJyb3I6OkNvdWxkIG5vdCBhc3NpZ24gZG9tYWluIGFsaWFzIGFmdGVyIDI0IGF0dGVtcHRzICg2IG1pbnV0ZXMpOyAkU1VCRE9NQUlOIHN0aWxsIHBvaW50cyBhdCB0aGUgcHJldmlvdXMgZGVwbG95bWVudC4iCiAgICAgICAgICAgIGV4aXQgMQogICAgICAgICAgZmkK" | base64 -d > /tmp/new_block2.txt
+          echo "aW1wb3J0IHN5cwoKcGF0aCA9ICIuZ2l0aHViL3dvcmtmbG93cy9kZXBsb3ktc3RhdHVzLWZlZWQueW1sIgpvbGQgPSBvcGVuKCIvdG1wL29sZF9ibG9jazIudHh0IiwgZW5jb2Rpbmc9InV0Zi04IikucmVhZCgpCm5ldyA9IG9wZW4oIi90bXAvbmV3X2Jsb2NrMi50eHQiLCBlbmNvZGluZz0idXRmLTgiKS5yZWFkKCkKCndpdGggb3BlbihwYXRoLCBlbmNvZGluZz0idXRmLTgiKSBhcyBmOgogICAgY29udGVudCA9IGYucmVhZCgpCgppZiBvbGQgbm90IGluIGNvbnRlbnQ6CiAgICBwcmludCgiT0xEIEJMT0NLIE5PVCBGT1VORCAtLSByZWZ1c2luZyB0byBndWVzcywgZmlsZSBtdXN0IGhhdmUgY2hhbmdlZCBzaGFwZSIsIGZpbGU9c3lzLnN0ZGVycikKICAgIHN5cy5leGl0KDEpCgpjb250ZW50ID0gY29udGVudC5yZXBsYWNlKG9sZCwgbmV3KQoKd2l0aCBvcGVuKHBhdGgsICJ3IiwgZW5jb2Rpbmc9InV0Zi04IikgYXMgZjoKICAgIGYud3JpdGUoY29udGVudCkKCnByaW50KCJSZXBsYWNlbWVudCBhcHBsaWVkLiIpCg==" | base64 -d > /tmp/patch2.py
+          python3 /tmp/patch2.py
+
+          echo "=== Read the property back ==="
+          grep -qF -- "seq 1 24" .github/workflows/deploy-status-feed.yml || { echo "::error::wider retry loop never landed"; exit 1; }
+          grep -qF -- "for attempt in 1 2 3 4 5 6; do" .github/workflows/deploy-status-feed.yml && { echo "::error::old narrow retry loop still present"; exit 1; }
+          echo "Wider retry loop verified present, old narrow loop verified gone."
+
+          if git diff --quiet; then
+            echo "No diff -- already widened."
+            echo "ALREADY_FIXED=true" >> "$GITHUB_ENV"
+          else
+            echo "ALREADY_FIXED=false" >> "$GITHUB_ENV"
+          fi
+
+      - name: Record and push
+        if: env.ALREADY_FIXED == 'false'
+        working-directory: /tmp/ccp
+        run: |
+          set -e
+          {
+            echo ""
+            echo "- \`(this repo's hash follows in a \\\`changelog:\\\` follow-up)\` -- widened \`deploy-status-feed.yml\`'s Vercel alias retry budget from 6 attempts/10s (60s total) to 24 attempts/15s (6 minutes). The first retry fix (previous commit) worked correctly -- all 6 attempts ran with proper backoff and the job correctly failed for real instead of silently swallowing the error -- but a real deploy (run 34622043309) showed Vercel's own propagation delay for this project can exceed 60s (build alone took ~3 minutes that run). Confirmed from the raw job log, not guessed."
+          } >> Team/CHANGELOG.md
+          git config user.email "control-room-bot@claud-cloud.local"
+          git config user.name "Control Room Bot"
+          git add .github/workflows/deploy-status-feed.yml Team/CHANGELOG.md
+          git commit -m "Widen Vercel alias retry budget to 6 minutes (was 60s)"
+          AUTH_HEADER="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$DST_TOKEN" | base64 -w0)"
+          git -c http.https://github.com/.extraHeader="$AUTH_HEADER" push origin HEAD:claude/gateway-auth-fix-nr7k0b
+
+      - name: Dispatch deploy-status-feed.yml on ACC6 to verify end-to-end
+        if: env.ALREADY_FIXED == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.ACC6 }}
+        run: |
+          set -e
+          sleep 5
+          gh workflow run deploy-status-feed.yml \
+            --repo mohammadlali0707-stack/Claud-Cloud-Project \
+            --ref claude/gateway-auth-fix-nr7k0b
+          echo "Dispatched on ACC6."
