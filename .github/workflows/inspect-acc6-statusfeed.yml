@@ -1,0 +1,64 @@
+name: Inspect ACC6 StatusFeed source and secrets (cross-account, read-only)
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      DST_TOKEN: ${{ secrets.ACC6 }}
+    steps:
+      - name: Guard
+        run: |
+          if [ -z "$DST_TOKEN" ]; then
+            echo "::error::secrets.ACC6 is not set on this repo."
+            exit 1
+          fi
+
+      - name: Clone ACC6's Claud-Cloud-Project directly
+        run: |
+          set -e
+          AUTH_HEADER="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$DST_TOKEN" | base64 -w0)"
+          git -c http.https://github.com/.extraHeader="$AUTH_HEADER" \
+            clone --branch claude/gateway-auth-fix-nr7k0b --single-branch \
+            "https://github.com/mohammadlali0707-stack/Claud-Cloud-Project.git" /tmp/ccp
+
+      - name: Print deploy-status-feed.yml
+        run: |
+          echo "===== deploy-status-feed.yml ====="
+          cat /tmp/ccp/.github/workflows/deploy-status-feed.yml
+          echo "===== END ====="
+
+      - name: Print collect_status_feed.py
+        run: |
+          echo "===== Tools/collect_status_feed.py ====="
+          cat /tmp/ccp/Tools/collect_status_feed.py
+          echo "===== END ====="
+
+      - name: Print ensure_cloudflare_dns.py
+        run: |
+          echo "===== Tools/ensure_cloudflare_dns.py ====="
+          cat /tmp/ccp/Tools/ensure_cloudflare_dns.py
+          echo "===== END ====="
+
+      - name: List StatusFeed directory
+        run: |
+          echo "===== StatusFeed/ listing ====="
+          find /tmp/ccp/StatusFeed -type f -exec ls -la {} \;
+          echo "===== END ====="
+
+      - name: List secret names on ACC6 (names only, never values)
+        env:
+          GH_TOKEN: ${{ secrets.ACC6 }}
+        run: |
+          echo "===== secret names on mohammadlali0707-stack/Claud-Cloud-Project ====="
+          gh secret list --repo mohammadlali0707-stack/Claud-Cloud-Project
+          echo "===== END ====="
+
+      - name: Check for .vercel project config
+        run: |
+          echo "===== .vercel dir (if any) ====="
+          find /tmp/ccp -maxdepth 3 -iname '.vercel*' -o -iname 'vercel.json' | xargs -I{} sh -c 'echo "--- {} ---"; cat {}'
+          echo "===== END ====="
