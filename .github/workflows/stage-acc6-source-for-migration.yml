@@ -1,0 +1,60 @@
+name: Stage ACC6 StatusFeed source into control-room (for migration, exact copy)
+
+# Log-based reconstruction (cat/sed across several dispatches) proved
+# unreliable -- line ranges from separate clone runs didn't line up,
+# most likely because the two dispatches landed on either side of one
+# of ACC6's own 5-minute scheduled deploy-status-feed.yml runs (which
+# rewrites StatusFeed/status.json and commits+pushes it), so a fresh
+# clone moments apart can legitimately land on a different commit.
+# That never touches Tools/*.py, but rather than keep guessing, this
+# stages the exact files as real git blobs in THIS repo -- no log
+# truncation, no line-number ambiguity, byte-exact.
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  stage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      DST_TOKEN: ${{ secrets.ACC6 }}
+    steps:
+      - name: Checkout control-room (self, for pushing the staged copy)
+        uses: actions/checkout@v4
+
+      - name: Clone ACC6's Claud-Cloud-Project directly
+        run: |
+          set -e
+          AUTH_HEADER="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$DST_TOKEN" | base64 -w0)"
+          git -c http.https://github.com/.extraHeader="$AUTH_HEADER" \
+            clone --branch claude/gateway-auth-fix-nr7k0b --single-branch \
+            "https://github.com/mohammadlali0707-stack/Claud-Cloud-Project.git" /tmp/ccp
+          echo "Cloned ACC6 at commit: $(git -C /tmp/ccp rev-parse HEAD)"
+
+      - name: Copy exact source files into staging path
+        run: |
+          set -e
+          mkdir -p .github/deploy-staging/status-dashboard-migration/tools
+          mkdir -p .github/deploy-staging/status-dashboard-migration/workflow
+          cp /tmp/ccp/Tools/collect_status_feed.py .github/deploy-staging/status-dashboard-migration/tools/collect_status_feed.py
+          cp /tmp/ccp/Tools/send_push_notification.py .github/deploy-staging/status-dashboard-migration/tools/send_push_notification.py
+          cp /tmp/ccp/Tools/ensure_cloudflare_dns.py .github/deploy-staging/status-dashboard-migration/tools/ensure_cloudflare_dns.py
+          cp /tmp/ccp/.github/workflows/deploy-status-feed.yml .github/deploy-staging/status-dashboard-migration/workflow/deploy-status-feed.yml
+          wc -l .github/deploy-staging/status-dashboard-migration/tools/*.py .github/deploy-staging/status-dashboard-migration/workflow/*.yml
+
+      - name: Commit and push into control-room itself
+        run: |
+          set -e
+          git config user.email "control-room-bot@claud-cloud.local"
+          git config user.name "Control Room Bot"
+          git add .github/deploy-staging/status-dashboard-migration
+          if git diff --cached --quiet; then
+            echo "No changes -- already staged identically."
+          else
+            git commit -m "Stage exact ACC6 StatusFeed source for status-dashboard migration"
+            git push origin HEAD:main
+          fi
