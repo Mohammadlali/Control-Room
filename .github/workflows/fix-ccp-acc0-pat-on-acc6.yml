@@ -1,0 +1,101 @@
+name: Fix CCP's ACC0_PAT self-push credential on ACC6 (cross-account)
+
+# Runs from Mohammadlali/control-room (an account this session can write
+# to directly) and fixes a bug on a DIFFERENT account's repo,
+# mohammadlali0707-stack/Claud-Cloud-Project ("ACC6"), the same way
+# migrate-ccp-to-acc6.yml moved the whole project there in the first
+# place: plain `git`/`gh` over HTTPS with that account's own PAT embedded
+# as a credential, no GitHub App or session access to ACC6 required at
+# all -- that path is separately blocked right now (the Claude GitHub App
+# is not installed on the mohammadlali0707-stack account).
+#
+# The bug being fixed: ACC6's copies of deploy-status-feed.yml and
+# backlog-dispatcher.yml still use ACC0_PAT for their own self-push step
+# (correct back when they lived on ACC0, wrong now -- ACC0_PAT is
+# Mohammadlali's token and cannot see ACC6's private repo). Confirmed for
+# real: run 34616266307 failed with "remote: Repository not found".
+#
+# Needs `secrets.ACC6_PAT` configured on THIS repo (control-room) --
+# the same PAT value already sitting on ACC6's own repo secrets, just
+# also pasted here so this workflow can use it. Nothing new to generate.
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  fix-on-acc6:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DST_TOKEN: ${{ secrets.ACC6_PAT }}
+    steps:
+      - name: Guard -- refuse to proceed without a real token
+        run: |
+          if [ -z "$DST_TOKEN" ]; then
+            echo "::error::secrets.ACC6_PAT is not set on this repo (control-room). Add it (same value as on ACC6's own Claud-Cloud-Project repo secrets), then re-run."
+            exit 1
+          fi
+          echo "ACC6_PAT present, ${#DST_TOKEN} chars."
+
+      - name: Clone ACC6's Claud-Cloud-Project directly (not this repo)
+        run: |
+          set -e
+          AUTH_HEADER="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$DST_TOKEN" | base64 -w0)"
+          git -c http.https://github.com/.extraHeader="$AUTH_HEADER" \
+            clone --branch claude/gateway-auth-fix-nr7k0b --single-branch \
+            "https://github.com/mohammadlali0707-stack/Claud-Cloud-Project.git" /tmp/ccp
+
+      - name: Point the two self-push steps at ACC6_PAT
+        working-directory: /tmp/ccp
+        run: |
+          set -e
+          sed -i 's|GH_TOKEN: ${{ secrets.ACC0_PAT }}|GH_TOKEN: ${{ secrets.ACC6_PAT }}|' .github/workflows/deploy-status-feed.yml
+          sed -i 's|TOKEN: ${{ secrets.ACC0_PAT }}|TOKEN: ${{ secrets.ACC6_PAT }}|' .github/workflows/backlog-dispatcher.yml
+
+          echo "=== Read the property back ==="
+          grep -q 'GH_TOKEN: ${{ secrets.ACC0_PAT }}' .github/workflows/deploy-status-feed.yml && { echo "::error::deploy-status-feed.yml still has the old credential"; exit 1; }
+          grep -q 'GH_TOKEN: ${{ secrets.ACC6_PAT }}' .github/workflows/deploy-status-feed.yml || { echo "::error::deploy-status-feed.yml never got the new credential"; exit 1; }
+          grep -q 'TOKEN: ${{ secrets.ACC0_PAT }}' .github/workflows/backlog-dispatcher.yml && { echo "::error::backlog-dispatcher.yml still has the old credential"; exit 1; }
+          grep -q 'TOKEN: ${{ secrets.ACC6_PAT }}' .github/workflows/backlog-dispatcher.yml || { echo "::error::backlog-dispatcher.yml never got the new credential"; exit 1; }
+          echo "Both files verified changed."
+
+          if git diff --quiet; then
+            echo "No diff -- already fixed on ACC6."
+            echo "ALREADY_FIXED=true" >> "$GITHUB_ENV"
+          else
+            echo "ALREADY_FIXED=false" >> "$GITHUB_ENV"
+          fi
+
+      - name: Record the change in ACC6's own Team/CHANGELOG.md
+        if: env.ALREADY_FIXED == 'false'
+        working-directory: /tmp/ccp
+        run: |
+          set -e
+          {
+            echo ""
+            echo "- \`(this repo's hash follows in a \\\`changelog:\\\` follow-up)\` -- fixed \`deploy-status-feed.yml\` and \`backlog-dispatcher.yml\`: their self-push steps used \`ACC0_PAT\` (correct when this repo lived on ACC0, wrong now that it lives on ACC6 -- that token cannot see this private repo, confirmed by a real failed push: \"remote: Repository not found\", run 34616266307). Both now use \`ACC6_PAT\`. Every other \`ACC0_PAT\` reference in this repo (the 9-account survey slots, the migration/comparison workflows) is untouched on purpose. Applied cross-account from \`Mohammadlali/control-room\`'s own Actions, the same mechanism that moved this repo to ACC6 in the first place -- the Claude GitHub App has no access to ACC6 yet."
+          } >> Team/CHANGELOG.md
+
+      - name: Commit and push to ACC6 (workflow-file push needs a real PAT)
+        if: env.ALREADY_FIXED == 'false'
+        working-directory: /tmp/ccp
+        run: |
+          set -e
+          git config user.email "control-room-bot@claud-cloud.local"
+          git config user.name "Control Room Bot"
+          git add .github/workflows/deploy-status-feed.yml .github/workflows/backlog-dispatcher.yml Team/CHANGELOG.md
+          git commit -m "Fix ACC0_PAT self-push credential in deploy-status-feed.yml and backlog-dispatcher.yml"
+          AUTH_HEADER="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$DST_TOKEN" | base64 -w0)"
+          git -c http.https://github.com/.extraHeader="$AUTH_HEADER" push origin HEAD:claude/gateway-auth-fix-nr7k0b
+
+      - name: Dispatch deploy-status-feed.yml on ACC6 to verify end-to-end
+        if: env.ALREADY_FIXED == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.ACC6_PAT }}
+        run: |
+          set -e
+          sleep 5
+          gh workflow run deploy-status-feed.yml \
+            --repo mohammadlali0707-stack/Claud-Cloud-Project \
+            --ref claude/gateway-auth-fix-nr7k0b
+          echo "Dispatched on ACC6. Check its Actions tab for 'Deploy Cross-Account Status Feed' in ~30s."
