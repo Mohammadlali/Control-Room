@@ -1,0 +1,24 @@
+name: Dispatch deploy-status-feed.yml on Mohammadlali/status-dashboard
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      GH_TOKEN: ${{ secrets.ACC0 }}
+    steps:
+      - name: Guard
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::secrets.ACC0 is not set on this repo."
+            exit 1
+          fi
+
+      - name: Dispatch
+        run: |
+          set -e
+          gh workflow run deploy-status-feed.yml --repo Mohammadlali/status-dashboard --ref main
+          echo "Dispatched."
