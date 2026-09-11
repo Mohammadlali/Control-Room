@@ -7,6 +7,11 @@ on:
         description: "The workflow run ID on mohammadlali0707-stack/Claud-Cloud-Project to check"
         required: true
         type: string
+      dump_full_log:
+        description: "Print the ENTIRE job log, even if it succeeded"
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   check:
@@ -42,6 +47,12 @@ jobs:
           gh run view "$RUN_ID" --repo mohammadlali0707-stack/Claud-Cloud-Project
           echo "=== jobs ==="
           gh run view "$RUN_ID" --repo mohammadlali0707-stack/Claud-Cloud-Project --json jobs --jq '.jobs[] | .name + ": " + .conclusion'
+
+      - name: Dump the entire job log if asked
+        if: inputs.dump_full_log == 'true'
+        run: |
+          RUN_ID="${{ inputs.run_id }}"
+          gh run view "$RUN_ID" --repo mohammadlali0707-stack/Claud-Cloud-Project --log
 
       - name: If it failed, print the failing log
         run: |
