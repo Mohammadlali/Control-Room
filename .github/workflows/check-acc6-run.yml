@@ -1,0 +1,54 @@
+name: Check an ACC6 Actions run's real outcome (cross-account)
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "The workflow run ID on mohammadlali0707-stack/Claud-Cloud-Project to check"
+        required: true
+        type: string
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ secrets.ACC6 }}
+    steps:
+      - name: Guard
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::secrets.ACC6 is not set on this repo."
+            exit 1
+          fi
+
+      - name: Poll for completion
+        run: |
+          set -e
+          RUN_ID="${{ inputs.run_id }}"
+          for i in $(seq 1 15); do
+            STATUS=$(gh run view "$RUN_ID" --repo mohammadlali0707-stack/Claud-Cloud-Project --json status,conclusion --jq '.status + " " + (.conclusion // "null")')
+            echo "poll $i: $STATUS"
+            case "$STATUS" in
+              completed*) break ;;
+            esac
+            sleep 10
+          done
+
+      - name: Report full result
+        run: |
+          set -e
+          RUN_ID="${{ inputs.run_id }}"
+          gh run view "$RUN_ID" --repo mohammadlali0707-stack/Claud-Cloud-Project
+          echo "=== jobs ==="
+          gh run view "$RUN_ID" --repo mohammadlali0707-stack/Claud-Cloud-Project --json jobs --jq '.jobs[] | .name + ": " + .conclusion'
+
+      - name: If it failed, print the failing log
+        run: |
+          RUN_ID="${{ inputs.run_id }}"
+          CONCLUSION=$(gh run view "$RUN_ID" --repo mohammadlali0707-stack/Claud-Cloud-Project --json conclusion --jq '.conclusion')
+          if [ "$CONCLUSION" != "success" ]; then
+            gh run view "$RUN_ID" --repo mohammadlali0707-stack/Claud-Cloud-Project --log-failed || true
+            exit 1
+          fi
+          echo "Run succeeded."
