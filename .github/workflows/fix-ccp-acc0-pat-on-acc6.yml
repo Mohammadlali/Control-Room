@@ -15,9 +15,13 @@ name: Fix CCP's ACC0_PAT self-push credential on ACC6 (cross-account)
 # Mohammadlali's token and cannot see ACC6's private repo). Confirmed for
 # real: run 34616266307 failed with "remote: Repository not found".
 #
-# Needs `secrets.ACC6_PAT` configured on THIS repo (control-room) --
-# the same PAT value already sitting on ACC6's own repo secrets, just
-# also pasted here so this workflow can use it. Nothing new to generate.
+# Needs `secrets.ACC6` configured on THIS repo (control-room) -- this
+# repo's own secret naming convention is bare ACC0..ACC8, not the
+# ACC0_PAT..ACC8_PAT scheme used on Claud-Cloud-Project. First attempt
+# (run 34619203071) failed on this exact mismatch. The VALUE needed is
+# the same PAT already sitting on ACC6's own repo secrets there (under
+# the name ACC6_PAT, per that repo's own convention) -- only the name
+# used to look it up here differs.
 
 on:
   workflow_dispatch: {}
@@ -27,15 +31,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
-      DST_TOKEN: ${{ secrets.ACC6_PAT }}
+      DST_TOKEN: ${{ secrets.ACC6 }}
     steps:
       - name: Guard -- refuse to proceed without a real token
         run: |
           if [ -z "$DST_TOKEN" ]; then
-            echo "::error::secrets.ACC6_PAT is not set on this repo (control-room). Add it (same value as on ACC6's own Claud-Cloud-Project repo secrets), then re-run."
+            echo "::error::secrets.ACC6 is not set on this repo (control-room). Add it (the same PAT value already on ACC6's own Claud-Cloud-Project repo secrets, there named ACC6_PAT), then re-run."
             exit 1
           fi
-          echo "ACC6_PAT present, ${#DST_TOKEN} chars."
+          echo "ACC6 present, ${#DST_TOKEN} chars."
 
       - name: Clone ACC6's Claud-Cloud-Project directly (not this repo)
         run: |
@@ -91,7 +95,7 @@ jobs:
       - name: Dispatch deploy-status-feed.yml on ACC6 to verify end-to-end
         if: env.ALREADY_FIXED == 'false'
         env:
-          GH_TOKEN: ${{ secrets.ACC6_PAT }}
+          GH_TOKEN: ${{ secrets.ACC6 }}
         run: |
           set -e
           sleep 5
