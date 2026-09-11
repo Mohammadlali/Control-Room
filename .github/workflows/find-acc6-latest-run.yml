@@ -1,0 +1,32 @@
+name: Find latest ACC6 workflow run ID (cross-account)
+
+on:
+  workflow_dispatch:
+    inputs:
+      workflow_file:
+        description: "Workflow file name on mohammadlali0707-stack/Claud-Cloud-Project"
+        required: true
+        default: "deploy-status-feed.yml"
+        type: string
+
+jobs:
+  find:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      GH_TOKEN: ${{ secrets.ACC6 }}
+    steps:
+      - name: Guard
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::secrets.ACC6 is not set on this repo."
+            exit 1
+          fi
+
+      - name: List latest runs
+        run: |
+          set -e
+          gh run list --repo mohammadlali0707-stack/Claud-Cloud-Project \
+            --workflow "${{ inputs.workflow_file }}" \
+            --limit 5 \
+            --json databaseId,status,conclusion,createdAt,headBranch,event
