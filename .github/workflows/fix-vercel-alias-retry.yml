@@ -1,0 +1,93 @@
+name: Fix Vercel alias race condition on ACC6 (cross-account)
+
+# Real root cause found 2026-09-11 while investigating "site still shows
+# 3h-old data despite the run reporting success": run 34619809977's
+# "Deploy to Vercel" step built and uploaded a real new deployment, but
+# `vercel alias set` failed with "the deployment ... is not ready" --
+# Vercel had not finished marking the fresh deployment ready by the time
+# the alias call ran. Because that line ended in `|| true`, the whole job
+# still reported success, so the live subdomain silently kept pointing at
+# the PREVIOUS deployment. Fix: retry the alias assignment with backoff,
+# and fail the job for real if it never succeeds, so a stale alias is
+# never reported as a green run again.
+#
+# The patch is applied via a base64-encoded Python script rather than an
+# inline heredoc: the old/new blocks and the patcher itself are pinned as
+# opaque base64 blobs so no YAML-block indentation or `${{ }}`-escaping
+# subtlety (both bit this same effort earlier today) can silently corrupt
+# them. The substitution was dry-run and verified locally before this
+# workflow was ever written.
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  fix-on-acc6:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DST_TOKEN: ${{ secrets.ACC6 }}
+    steps:
+      - name: Guard
+        run: |
+          if [ -z "$DST_TOKEN" ]; then
+            echo "::error::secrets.ACC6 is not set on this repo."
+            exit 1
+          fi
+
+      - name: Clone ACC6's Claud-Cloud-Project directly
+        run: |
+          set -e
+          AUTH_HEADER="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$DST_TOKEN" | base64 -w0)"
+          git -c http.https://github.com/.extraHeader="$AUTH_HEADER" \
+            clone --branch claude/gateway-auth-fix-nr7k0b --single-branch \
+            "https://github.com/mohammadlali0707-stack/Claud-Cloud-Project.git" /tmp/ccp
+
+      - name: Add a retry loop around the Vercel alias assignment
+        working-directory: /tmp/ccp
+        run: |
+          set -e
+          echo "ICAgICAgICAgICMgRXh0cmFjdCBjbGVhbiBVUkwgZnJvbSBkZXBsb3ltZW50IG91dHB1dCAoZS5nLiBodHRwczovL2NsYXVkLWNsb3VkLXN0YXR1cy14eHgudmVyY2VsLmFwcCkKICAgICAgICAgIERFUExPWV9VUkw9JChlY2hvICIkREVQTE9ZX09VVFBVVCIgfCBncmVwIC1FbyAnaHR0cHM6Ly9bYS16QS1aMC05Li1dK1wudmVyY2VsXC5hcHAnIHwgaGVhZCAtbiAxKQogICAgICAgICAgaWYgWyAtbiAiJERFUExPWV9VUkwiIF07IHRoZW4KICAgICAgICAgICAgZWNobyAiQXNzaWduaW5nIGRvbWFpbiBhbGlhcyAkU1VCRE9NQUlOIHRvICRERVBMT1lfVVJMLi4uIgogICAgICAgICAgICBucHggLS15ZXMgdmVyY2VsIGFsaWFzIHNldCAiJERFUExPWV9VUkwiICIkU1VCRE9NQUlOIiAtLXRva2VuPSIkVkVSQ0VMX1RPS0VOIiB8fCB0cnVlCiAgICAgICAgICBlbGlmIFsgLW4gIiRERVBMT1lfT1VUUFVUIiBdOyB0aGVuCiAgICAgICAgICAgIGVjaG8gIkFzc2lnbmluZyBkb21haW4gYWxpYXMgJFNVQkRPTUFJTiB0byBkZXBsb3ltZW50IG91dHB1dC4uLiIKICAgICAgICAgICAgbnB4IC0teWVzIHZlcmNlbCBhbGlhcyBzZXQgIiRERVBMT1lfT1VUUFVUIiAiJFNVQkRPTUFJTiIgLS10b2tlbj0iJFZFUkNFTF9UT0tFTiIgfHwgdHJ1ZQogICAgICAgICAgZWxzZQogICAgICAgICAgICBlY2hvICJXYXJuaW5nOiBObyBkZXBsb3ltZW50IFVSTCByZXRyaWV2ZWQ7IHNraXBwaW5nIGRvbWFpbiBhbGlhcyBzdGVwLiIKICAgICAgICAgIGZpCg==" | base64 -d > /tmp/old_block.txt
+          echo "ICAgICAgICAgICMgRXh0cmFjdCBjbGVhbiBVUkwgZnJvbSBkZXBsb3ltZW50IG91dHB1dCAoZS5nLiBodHRwczovL2NsYXVkLWNsb3VkLXN0YXR1cy14eHgudmVyY2VsLmFwcCkKICAgICAgICAgIERFUExPWV9VUkw9JChlY2hvICIkREVQTE9ZX09VVFBVVCIgfCBncmVwIC1FbyAnaHR0cHM6Ly9bYS16QS1aMC05Li1dK1wudmVyY2VsXC5hcHAnIHwgaGVhZCAtbiAxKQogICAgICAgICAgaWYgWyAteiAiJERFUExPWV9VUkwiIF07IHRoZW4KICAgICAgICAgICAgaWYgWyAtbiAiJERFUExPWV9PVVRQVVQiIF07IHRoZW4KICAgICAgICAgICAgICBERVBMT1lfVVJMPSIkREVQTE9ZX09VVFBVVCIKICAgICAgICAgICAgZWxzZQogICAgICAgICAgICAgIGVjaG8gIjo6ZXJyb3I6Ok5vIGRlcGxveW1lbnQgVVJMIHJldHJpZXZlZDsgY2Fubm90IGFzc2lnbiBkb21haW4gYWxpYXMuIgogICAgICAgICAgICAgIGV4aXQgMQogICAgICAgICAgICBmaQogICAgICAgICAgZmkKCiAgICAgICAgICAjIEEgZnJlc2ggZGVwbG95bWVudCBpcyBub3QgYWx3YXlzIGltbWVkaWF0ZWx5ICJyZWFkeSIgb24KICAgICAgICAgICMgVmVyY2VsJ3Mgc2lkZSAtLSBmb3VuZCBmb3IgcmVhbCAyMDI2LTA5LTExIChydW4gMzQ2MTk4MDk5NzcpOgogICAgICAgICAgIyB0aGUgYWxpYXMgY2FsbCBmYWlsZWQgb25jZSB3aXRoICJpcyBub3QgcmVhZHkiIHJpZ2h0IGFmdGVyIGEKICAgICAgICAgICMgc3VjY2Vzc2Z1bCBidWlsZCwgYW5kIGJlY2F1c2UgdGhpcyB1c2VkIHRvIGVuZCBpbiBgfHwgdHJ1ZWAsCiAgICAgICAgICAjIHRoZSB3aG9sZSBqb2Igc3RpbGwgcmVwb3J0ZWQgc3VjY2VzcyB3aGlsZSB0aGUgbGl2ZSBzdWJkb21haW4KICAgICAgICAgICMga2VwdCBwb2ludGluZyBhdCB0aGUgUFJFVklPVVMgZGVwbG95bWVudC4gUmV0cnkgd2l0aCBiYWNrb2ZmCiAgICAgICAgICAjIGFuZCBmYWlsIHRoZSBqb2IgZm9yIHJlYWwgaWYgaXQgbmV2ZXIgc3VjY2VlZHMuCiAgICAgICAgICBlY2hvICJBc3NpZ25pbmcgZG9tYWluIGFsaWFzICRTVUJET01BSU4gdG8gJERFUExPWV9VUkwuLi4iCiAgICAgICAgICBBTElBU19PSz1mYWxzZQogICAgICAgICAgZm9yIGF0dGVtcHQgaW4gMSAyIDMgNCA1IDY7IGRvCiAgICAgICAgICAgIGlmIG5weCAtLXllcyB2ZXJjZWwgYWxpYXMgc2V0ICIkREVQTE9ZX1VSTCIgIiRTVUJET01BSU4iIC0tdG9rZW49IiRWRVJDRUxfVE9LRU4iOyB0aGVuCiAgICAgICAgICAgICAgQUxJQVNfT0s9dHJ1ZQogICAgICAgICAgICAgIGJyZWFrCiAgICAgICAgICAgIGZpCiAgICAgICAgICAgIGVjaG8gIkFsaWFzIGF0dGVtcHQgJGF0dGVtcHQgZmFpbGVkIChkZXBsb3ltZW50IGxpa2VseSBub3QgcmVhZHkgeWV0KTsgcmV0cnlpbmcgaW4gMTBzLi4uIgogICAgICAgICAgICBzbGVlcCAxMAogICAgICAgICAgZG9uZQogICAgICAgICAgaWYgWyAiJEFMSUFTX09LIiAhPSAidHJ1ZSIgXTsgdGhlbgogICAgICAgICAgICBlY2hvICI6OmVycm9yOjpDb3VsZCBub3QgYXNzaWduIGRvbWFpbiBhbGlhcyBhZnRlciA2IGF0dGVtcHRzOyAkU1VCRE9NQUlOIHN0aWxsIHBvaW50cyBhdCB0aGUgcHJldmlvdXMgZGVwbG95bWVudC4iCiAgICAgICAgICAgIGV4aXQgMQogICAgICAgICAgZmkK" | base64 -d > /tmp/new_block.txt
+          echo "aW1wb3J0IHN5cwoKcGF0aCA9ICIuZ2l0aHViL3dvcmtmbG93cy9kZXBsb3ktc3RhdHVzLWZlZWQueW1sIgpvbGQgPSBvcGVuKCIvdG1wL29sZF9ibG9jay50eHQiLCBlbmNvZGluZz0idXRmLTgiKS5yZWFkKCkKbmV3ID0gb3BlbigiL3RtcC9uZXdfYmxvY2sudHh0IiwgZW5jb2Rpbmc9InV0Zi04IikucmVhZCgpCgp3aXRoIG9wZW4ocGF0aCwgZW5jb2Rpbmc9InV0Zi04IikgYXMgZjoKICAgIGNvbnRlbnQgPSBmLnJlYWQoKQoKaWYgb2xkIG5vdCBpbiBjb250ZW50OgogICAgcHJpbnQoIk9MRCBCTE9DSyBOT1QgRk9VTkQgLS0gcmVmdXNpbmcgdG8gZ3Vlc3MsIGZpbGUgbXVzdCBoYXZlIGNoYW5nZWQgc2hhcGUiLCBmaWxlPXN5cy5zdGRlcnIpCiAgICBzeXMuZXhpdCgxKQoKY29udGVudCA9IGNvbnRlbnQucmVwbGFjZShvbGQsIG5ldykKCndpdGggb3BlbihwYXRoLCAidyIsIGVuY29kaW5nPSJ1dGYtOCIpIGFzIGY6CiAgICBmLndyaXRlKGNvbnRlbnQpCgpwcmludCgiUmVwbGFjZW1lbnQgYXBwbGllZC4iKQo=" | base64 -d > /tmp/patch.py
+          python3 /tmp/patch.py
+
+          echo "=== Read the property back ==="
+          grep -qF -- "ALIAS_OK=false" .github/workflows/deploy-status-feed.yml || { echo "::error::retry loop never landed"; exit 1; }
+          grep -qF -- '|| true' .github/workflows/deploy-status-feed.yml && { echo "::error::old silent-failure pattern still present"; exit 1; }
+          echo "Retry loop verified present, old silent-failure pattern verified gone."
+
+          if git diff --quiet; then
+            echo "No diff -- already fixed."
+            echo "ALREADY_FIXED=true" >> "$GITHUB_ENV"
+          else
+            echo "ALREADY_FIXED=false" >> "$GITHUB_ENV"
+          fi
+
+      - name: Record and push
+        if: env.ALREADY_FIXED == 'false'
+        working-directory: /tmp/ccp
+        run: |
+          set -e
+          {
+            echo ""
+            echo "- \`(this repo's hash follows in a \\\`changelog:\\\` follow-up)\` -- fixed a real bug found while investigating a stale status feed: \`deploy-status-feed.yml\`'s Vercel alias step failed with \\\"the deployment ... is not ready\\\" right after a successful build (run 34619809977, confirmed from the raw job log) -- a normal Vercel propagation delay, not this session's doing. Because the alias line ended in \`|| true\`, the job still reported success while \`status.airboxvip.top\` silently kept pointing at the PREVIOUS deployment. Added a 6-attempt retry loop with a 10s backoff, and the job now fails for real if the alias never lands, instead of reporting a false green."
+          } >> Team/CHANGELOG.md
+          git config user.email "control-room-bot@claud-cloud.local"
+          git config user.name "Control Room Bot"
+          git add .github/workflows/deploy-status-feed.yml Team/CHANGELOG.md
+          git commit -m "Retry the Vercel alias assignment instead of silently swallowing failure"
+          AUTH_HEADER="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$DST_TOKEN" | base64 -w0)"
+          git -c http.https://github.com/.extraHeader="$AUTH_HEADER" push origin HEAD:claude/gateway-auth-fix-nr7k0b
+
+      - name: Dispatch deploy-status-feed.yml on ACC6 to verify end-to-end
+        if: env.ALREADY_FIXED == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.ACC6 }}
+        run: |
+          set -e
+          sleep 5
+          gh workflow run deploy-status-feed.yml \
+            --repo mohammadlali0707-stack/Claud-Cloud-Project \
+            --ref claude/gateway-auth-fix-nr7k0b
+          echo "Dispatched on ACC6."
