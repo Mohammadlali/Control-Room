@@ -1,0 +1,25 @@
+name: Inspect ACC6 StatusFeed source pt4 (collect_status_feed.py lines 172-262)
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      DST_TOKEN: ${{ secrets.ACC6 }}
+    steps:
+      - name: Clone ACC6's Claud-Cloud-Project directly
+        run: |
+          set -e
+          AUTH_HEADER="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$DST_TOKEN" | base64 -w0)"
+          git -c http.https://github.com/.extraHeader="$AUTH_HEADER" \
+            clone --branch claude/gateway-auth-fix-nr7k0b --single-branch \
+            "https://github.com/mohammadlali0707-stack/Claud-Cloud-Project.git" /tmp/ccp
+
+      - name: Print collect_status_feed.py lines 172-262
+        run: |
+          echo "===== collect_status_feed.py 172-262 ====="
+          sed -n '172,262p' /tmp/ccp/Tools/collect_status_feed.py
+          echo "===== END 172-262 ====="
