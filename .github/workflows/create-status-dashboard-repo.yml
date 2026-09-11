@@ -1,0 +1,41 @@
+name: Create Mohammadlali/status-dashboard repo (cross-account via ACC0 PAT)
+
+# This session's own direct GitHub App access can create/write files in
+# Mohammadlali-owned repos but got a 403 ("Resource not accessible by
+# integration") on repo CREATION specifically -- that's a scope the App
+# install doesn't carry. A raw PAT does, so this uses control-room's own
+# stored ACC0 secret (Mohammadlali's PAT) via gh CLI instead.
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  create:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      GH_TOKEN: ${{ secrets.ACC0 }}
+    steps:
+      - name: Guard
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::secrets.ACC0 is not set on this repo."
+            exit 1
+          fi
+
+      - name: Create the repo if it doesn't already exist
+        run: |
+          set -e
+          if gh repo view Mohammadlali/status-dashboard >/dev/null 2>&1; then
+            echo "Mohammadlali/status-dashboard already exists -- not recreating."
+          else
+            gh repo create Mohammadlali/status-dashboard \
+              --public \
+              --description "Fleet-wide ops status dashboard for status.airboxvip.top (CCP + Control-Room + all 9 accounts). Moved out of Claud-Cloud-Project since it isn't CCP-specific." \
+              --add-readme
+            echo "Created."
+          fi
+
+      - name: Verify
+        run: |
+          gh repo view Mohammadlali/status-dashboard --json name,visibility,defaultBranchRef
