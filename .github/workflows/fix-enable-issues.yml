@@ -1,0 +1,43 @@
+name: Fix -- re-enable Issues on this repo (found disabled, blocks the whole @agy trigger)
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  enable-issues:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      GH_TOKEN: ${{ secrets.ACC0_PAT }}
+    steps:
+      - name: Check current has_issues value
+        run: |
+          set -e
+          curl -s -H "Authorization: token $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/Mohammadlali/Control-Room" > /tmp/before.json
+          python3 -c "import json; d = json.load(open('/tmp/before.json')); print('has_issues before:', d.get('has_issues'))"
+
+      - name: PATCH has_issues=true
+        run: |
+          set -e
+          CODE=$(curl -s -o /tmp/patch_result.json -w "%{http_code}" -X PATCH \
+            -H "Authorization: token $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            -d '{"has_issues": true}' \
+            "https://api.github.com/repos/Mohammadlali/Control-Room")
+          echo "HTTP $CODE"
+          if [ "$CODE" != "200" ]; then
+            echo "::error::PATCH failed"
+            cat /tmp/patch_result.json
+            exit 1
+          fi
+
+      - name: Verify it stuck
+        run: |
+          set -e
+          sleep 2
+          curl -s -H "Authorization: token $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/Mohammadlali/Control-Room" > /tmp/after.json
+          python3 -c "import json,sys; d = json.load(open('/tmp/after.json')); v = d.get('has_issues'); print('has_issues after:', v); sys.exit(0 if v else 1)"
