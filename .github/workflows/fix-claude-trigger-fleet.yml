@@ -1,0 +1,105 @@
+name: One-off - fix @claude trigger convention across ACC1-ACC8
+
+# Correction: audit-claude-trigger-and-secrets.yml's grep-based classifier
+# mis-reported every one of ACC1..ACC8's own agw-claude.yml as already
+# "trailing (endsWith)" -- it matched the FIRST endsWith(...) substring it
+# found, which was actually the bot-handoff sub-clause, not the real
+# human-trigger condition (contains(...), which matches '@claude'
+# anywhere). Confirmed by reading the file directly. Owner asked for
+# ACC6 to match "the other accounts" on this -- since all 8 share the
+# identical file (propagated via ACC6's own relay-deploy-file.yml), the
+# real fix applies to all 8, not just ACC6.
+#
+# Tools/patch_claude_trigger.py does a SURGICAL replace of exactly three
+# things: the main contains(...) condition -> endsWith(...)-only (on both
+# comment.body and issue.body, since contains() covered either via ||),
+# the now-redundant endsWith(...) inside the bot-handoff sub-clause
+# (removed, since the top-level condition already guarantees it), and the
+# @agy exclusion (!startsWith(issue.body, '@agy') -> the endsWith
+# equivalent, since @agy's own trigger already moved to trailing and the
+# old exclusion was stale against it). Nothing else in any file changes.
+# Verified locally against a reconstruction of the real file before ever
+# touching a live repo.
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      ACC1: ${{ secrets.ACC1 }}
+      ACC2: ${{ secrets.ACC2 }}
+      ACC3: ${{ secrets.ACC3 }}
+      ACC4: ${{ secrets.ACC4 }}
+      ACC5: ${{ secrets.ACC5 }}
+      ACC6: ${{ secrets.ACC6 }}
+      ACC7: ${{ secrets.ACC7 }}
+      ACC8: ${{ secrets.ACC8 }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Patch each account's agw-claude.yml trigger to trailing @claude
+        run: |
+          declare -A REPO=(
+            [1]="momonakikugava-pixel/agw-workers"
+            [2]="lali94m-max/agw-workers"
+            [3]="ngocgminh5-debug/agw-workers"
+            [4]="hmmletssee7-design/agw-workers"
+            [5]="kidding602/agw-workers"
+            [6]="mohammadlali0707-stack/agw-workers"
+            [7]="mohammad97okk/agw-workers"
+            [8]="moradzahra85-png/agw-workers"
+          )
+
+          patch_repo() {
+            local token="$1" repo="$2"
+            echo "=== $repo ==="
+            RESP=$(curl -sS -H "Authorization: Bearer $token" -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${repo}/contents/.github/workflows/agw-claude.yml")
+            SHA=$(echo "$RESP" | jq -r '.sha')
+            if [ -z "$SHA" ] || [ "$SHA" = "null" ]; then
+              echo "::error::could not fetch sha for $repo"
+              echo "$RESP"
+              return 1
+            fi
+            echo "$RESP" | jq -r '.content' | base64 -d > /tmp/orig.yml
+
+            STATUS=$(python3 Tools/patch_claude_trigger.py /tmp/orig.yml /tmp/patched.yml)
+            echo "patch status: $STATUS"
+            if [ "$STATUS" != "CHANGED" ]; then
+              echo "nothing to change for $repo, skipping write"
+              return 0
+            fi
+
+            python3 Tools/validate_yaml.py /tmp/patched.yml
+            echo "--- unified diff ---"
+            diff -u /tmp/orig.yml /tmp/patched.yml || true
+
+            NEW_CONTENT_B64=$(base64 -w0 /tmp/patched.yml)
+            MSG='fix: match @claude at the end of the body/comment, not anywhere -- fleet-wide, owner requested trailing convention consistent with @agy; nothing else in this file changed'
+            PAYLOAD=$(jq -n --arg msg "$MSG" --arg content "$NEW_CONTENT_B64" --arg sha "$SHA" \
+              '{message:$msg, content:$content, sha:$sha}')
+            CODE=$(curl -sS -o /tmp/put_resp.json -w "%{http_code}" -X PUT \
+              -H "Authorization: Bearer $token" -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/${repo}/contents/.github/workflows/agw-claude.yml" \
+              -d "$PAYLOAD")
+            echo "PUT HTTP $CODE for $repo"
+            if [ "$CODE" != "200" ]; then
+              echo "::error::PUT failed for $repo"
+              cat /tmp/put_resp.json
+              return 1
+            fi
+            echo "$repo: patched successfully."
+          }
+
+          for i in 1 2 3 4 5 6 7 8; do
+            eval "TOKEN=\$ACC$i"
+            if [ -z "$TOKEN" ]; then
+              echo "ACC$i: no token, skipping"
+              continue
+            fi
+            patch_repo "$TOKEN" "${REPO[$i]}"
+          done
