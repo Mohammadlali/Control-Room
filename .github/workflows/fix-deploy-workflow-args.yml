@@ -1,0 +1,43 @@
+name: Fix deploy-status-feed.yml's stale --gates-dir argument
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      DST_TOKEN: ${{ secrets.ACC0 }}
+      REPO: Mohammadlali/status-dashboard
+      BRANCH: main
+    steps:
+      - name: Clone, fix, commit, push
+        run: |
+          set -e
+          AUTH_HEADER="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$DST_TOKEN" | base64 -w0)"
+          git -c http.https://github.com/.extraHeader="$AUTH_HEADER" \
+            clone --branch "$BRANCH" --single-branch \
+            "https://github.com/$REPO.git" /tmp/sd
+          cd /tmp/sd
+          git config user.email "control-room-bot@claud-cloud.local"
+          git config user.name "Control Room Bot"
+
+          F=".github/workflows/deploy-status-feed.yml"
+          grep -q -- "--gates-dir Reports/gates" "$F"
+          sed -i 's/ --gates-dir Reports\/gates//' "$F"
+          grep -q -- "--gates-dir" "$F" && { echo "still present, sed failed"; exit 1; } || true
+          python3 -c "import yaml; yaml.safe_load(open('$F'))"
+
+          git add "$F"
+          git commit -m "Fix deploy-status-feed.yml: drop stale --gates-dir arg the rewritten collector no longer accepts"
+
+          n=0
+          until git -c http.https://github.com/.extraHeader="$AUTH_HEADER" push origin "HEAD:$BRANCH"; do
+            n=$((n+1))
+            if [ "$n" -ge 4 ]; then echo "push failed after 4 attempts"; exit 1; fi
+            sleep $((2 ** n))
+            git -c http.https://github.com/.extraHeader="$AUTH_HEADER" fetch origin "$BRANCH"
+            git rebase "origin/$BRANCH"
+          done
+          echo "Pushed: $(git rev-parse --short HEAD)"
