@@ -1,0 +1,48 @@
+name: Stage ACC6 gate-related files for the retirement fix
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  stage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      DST_TOKEN: ${{ secrets.ACC6 }}
+    steps:
+      - name: Checkout control-room (self, for pushing the staged copy)
+        uses: actions/checkout@v4
+
+      - name: Clone ACC6's Claud-Cloud-Project directly
+        run: |
+          set -e
+          AUTH_HEADER="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$DST_TOKEN" | base64 -w0)"
+          git -c http.https://github.com/.extraHeader="$AUTH_HEADER" \
+            clone --branch claude/gateway-auth-fix-nr7k0b --single-branch \
+            "https://github.com/mohammadlali0707-stack/Claud-Cloud-Project.git" /tmp/ccp
+
+      - name: Copy the exact files needed
+        run: |
+          set -e
+          mkdir -p .github/deploy-staging/gate-fix
+          cp /tmp/ccp/Team/MAP.md .github/deploy-staging/gate-fix/MAP.md
+          cp /tmp/ccp/Team/NEW_SESSION_PROMPT.md .github/deploy-staging/gate-fix/NEW_SESSION_PROMPT.md
+          cp /tmp/ccp/Team/RULES.md .github/deploy-staging/gate-fix/RULES.md
+          cp /tmp/ccp/Tools/verify_claims.py .github/deploy-staging/gate-fix/verify_claims.py
+          wc -l .github/deploy-staging/gate-fix/*
+
+      - name: Commit and push into control-room itself
+        run: |
+          set -e
+          git config user.email "control-room-bot@claud-cloud.local"
+          git config user.name "Control Room Bot"
+          git add .github/deploy-staging/gate-fix
+          if git diff --cached --quiet; then
+            echo "No changes -- already staged identically."
+          else
+            git commit -m "Stage ACC6 gate-fix files (MAP.md, NEW_SESSION_PROMPT.md, RULES.md, verify_claims.py)"
+            git push origin HEAD:main
+          fi
