@@ -37,6 +37,15 @@
       "display_name": "AirboxVIP Coffeenet",
       "keywords": ["airbox", "airboxvip", "coffeenet", "coffee", "cafe",
         "kiosk", "menu ordering"]
+    },
+    "status_dashboard": {
+      "host_account": "ACC0",
+      "host_repo": "status-dashboard",
+      "display_name": "Status Dashboard",
+      "keywords": ["status dashboard", "status-dashboard", "status feed",
+        "status.json", "collect_status_feed", "status.airboxvip.top",
+        "quiet green", "stuck items", "project card", "gate card",
+        "vercel deploy", "cron-job.org"]
     }
   }
 }

@@ -17,13 +17,26 @@ says `mohammadlali0707-stack/Control-Room` -- read `Team/COMPANY_SCOPE.md`
 for the current, correct account map instead of assuming this file's older
 rows are current.
 
+**2026-09-12 -- `status-dashboard` is a 4th tracked project (ACC0), and
+this repo + `status-dashboard` are TEMPORARILY PUBLIC** (ACC0's private-repo
+Actions quota ran out; owner plans to re-privatize both in ~3 weeks). A
+real fleet-dispatch bug (`ACC0_PAT`..`ACC8_PAT` secret names that don't
+exist -- real names are bare `ACC0`..`ACC8`) and a real AGY-output public-log
+leak were both found and fixed today, propagated to all 9 accounts, and
+verified live end-to-end. See `Team/WHERE_WE_ARE.md` for the full account
+and `Team/CHANGELOG.md` (commits `9783033`..`67652d5`, `0cdb146`,
+`2a05299`) for the detailed record.
+
 | Workstream | Status | Lead / Runner | Target Repo |
 |------------|--------|---------------|-------------|
 | 1. Control-Room Core & Gates | ACTIVE | Local / AGY Bot / MCP | `Mohammadlali/Control-Room` (this repo, on `ACC0`) |
-| 2. Cloud Runner Workflows | OPERATIONAL | GitHub Actions / AGY | `Mohammadlali/agw-workers` + the other 8 accounts' `agw-workers` |
-| 3. Topic-based issue routing | BUILT 2026-09-11 | `Tools/route_topic.py` via `control-agy.yml` | this repo |
-| 4. Project Integrations (TEHRAN: BLIND SPOT) | ACTIVE, hosted elsewhere | TBD | `mohammadlali0707-stack/Claud-Cloud-Project` (`ACC6`/`07`) -- the ONLY home for TBS as of 2026-09-11; `ACC0`'s own former copy is retiring |
-| 5. Project Integrations (AirboxVIP Coffeenet) | ACTIVE, hosted elsewhere | TBD | `momonakikugava-pixel/AirboxVIP_Coffeenet` (`ACC1`/Momona) |
+| 2. Cloud Runner Workflows | OPERATIONAL | GitHub Actions / AGY | `Mohammadlali/agw-workers` + the other 8 accounts' `agw-workers` (all 9 public, unlimited minutes) |
+| 3. Topic-based issue routing | ACTIVE, 4 projects | `Tools/route_topic.py` via `control-agy.yml` | this repo |
+| 4. Project Integrations (TEHRAN: BLIND SPOT) | ACTIVE, hosted elsewhere | TBD | `mohammadlali0707-stack/Claud-Cloud-Project` (`ACC6`/`07`) -- the ONLY home for TBS as of 2026-09-11; Private |
+| 5. Project Integrations (AirboxVIP Coffeenet) | ACTIVE, hosted elsewhere | TBD | `momonakikugava-pixel/AirboxVIP_Coffeenet` (`ACC1`/Momona); Private |
+| 6. Status Dashboard | ACTIVE, TEMP PUBLIC | GitHub Actions + cron-job.org (no Claude dependency) | `Mohammadlali/status-dashboard` (`ACC0`) -- `status.airboxvip.top`, behind Vercel SSO regardless of repo visibility |
+| 7. AGY-output leak fix + fleet-dispatch secret-name fix | DONE 2026-09-12, verified live | AGY worker output now committed to target repo's `Reports/agy/`, read via Contents API; fleet secrets renamed | `agw-worker.yml` (all 9 accounts) + `control-agy.yml` (this repo) |
+| 8. Chat-with-@agy on status-dashboard | IN PROGRESS (backend not started) | Serverless functions + issue-based dispatch | `status-dashboard` (frontend/API) + this repo (issue target) |
 
 ---
 

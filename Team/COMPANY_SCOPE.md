@@ -13,10 +13,14 @@ Change both files together, in the same commit.
 ## The rule, stated once
 
 **ACC0 (`Mohammadlali`, this account) does management only.** No game, no
-website, no other project's code is ever developed here. Its only repo doing
-substantive work is `Control-Room` itself (this repo) plus its own
-`agw-workers` runner fleet, which executes Control-Room's own tasks — never
-another project's.
+customer-facing product, no other project's code is ever developed here.
+Its repos doing substantive work are `Control-Room` itself (this repo),
+`status-dashboard` (2026-09-12 -- the org-wide status feed/dashboard site
+at `status.airboxvip.top`, an internal reporting tool for this same
+management function, not a separate product), and its own `agw-workers`
+runner fleet, which executes Control-Room's own tasks (and, since
+2026-09-12, `status-dashboard`'s AGY-output writes -- see
+`Team/CHANGELOG.md`) — never another project's actual code.
 
 **Every other project has exactly one canonical host repo.** A project's
 code, issues, and history live in ONE place. An account can additionally
@@ -28,7 +32,7 @@ and only one account holds the host role per project.
 
 | Account | GitHub login | Nickname | Hosts (canonical repo) | Also works TBS ring domain |
 |---|---|---|---|---|
-| ACC0 | `Mohammadlali` | 1997 | **Control-Room** (this repo) — management only | — (left the ring permanently, 2026-09-10) |
+| ACC0 | `Mohammadlali` | 1997 | **Control-Room** (this repo) + **`status-dashboard`** (org status feed, 2026-09-12) — management only | — (left the ring permanently, 2026-09-10) |
 | ACC1 | `momonakikugava-pixel` | Momona | `AirboxVIP_Coffeenet` | D — Verification and Integration/CI (primary) |
 | ACC2 | `lali94m-max` | 94 | — (no project of its own yet) | I — Tools and audit (primary), D (secondary) |
 | ACC3 | `ngocgminh5-debug` | ngocg | — (no project of its own yet) | A — Visual Assets and AI Generation (primary), I (secondary) |
@@ -63,6 +67,34 @@ dispatch from there via its own `agy-issue-bot.yml`.
   not a rule: if the owner starts a new project, its host account is
   whichever one the owner names, recorded here with a CHANGELOG line, same
   as the AirboxVIP/TBS assignments were.
+
+## What changed 2026-09-12
+
+- **`status-dashboard` added as a routable project**, hosted on ACC0
+  alongside Control-Room (see the ACC0 row above and the rule text at the
+  top of this file). It was created 2026-09-07/08 (Tasks in
+  `Team/CHANGELOG.md`) but was never added to this file or
+  `Team/company_scope.json` until now -- a real gap: any `@agy` question
+  specifically about the dashboard site had nowhere correct to route to
+  and would have fallen through to `control-room` by default (harmless,
+  since both are ACC0-hosted and worked by the same fleet, but not
+  correctly attributed).
+- **Owner temporarily made `Control-Room` and `status-dashboard` PUBLIC**
+  (ACC0 hit its GitHub Actions minutes quota for private repos). Plan: keep
+  public for roughly three weeks until the quota resets, then make both
+  private again -- see `Team/WHERE_WE_ARE.md` for the live status and risk
+  assessment. `AirboxVIP_Coffeenet` and `Claud-Cloud-Project` (TBS, on
+  ACC6) remain private throughout; only ACC0's own two repos are affected.
+  All 9 accounts' `agw-workers` repos are PUBLIC on purpose (unlimited
+  Actions minutes, no project code lives there) and this is unrelated to
+  the temporary condition above.
+- **Fixed a real, live bug in the fleet-dispatch path**: `control-agy.yml`
+  referenced `ACC0_PAT`..`ACC8_PAT` (a naming convention that belongs to
+  `status-dashboard`'s own secrets) when this repo's actual secrets are the
+  bare `ACC0`..`ACC8`. Every dispatch to the agw-workers fleet was silently
+  failing until this was caught and fixed live (see `Team/CHANGELOG.md`,
+  commit `0cdb146`) -- if you are debugging "the bot never replies," check
+  this is still fixed before assuming something else broke it.
 
 ## Two hard rules the router enforces
 
