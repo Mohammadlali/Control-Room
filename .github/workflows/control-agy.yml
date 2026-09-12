@@ -34,8 +34,13 @@ jobs:
     timeout-minutes: 30
     if: >
       github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'issues' && startsWith(github.event.issue.body, '@agy')) ||
-      (github.event_name == 'issue_comment' && startsWith(github.event.comment.body, '@agy') && github.event.comment.user.type != 'Bot')
+      (github.event_name == 'issues' &&
+        (endsWith(github.event.issue.body, '@agy') || endsWith(github.event.issue.body, '@agy\n') || endsWith(github.event.issue.body, '@agy\r\n'))
+      ) ||
+      (github.event_name == 'issue_comment' &&
+        (endsWith(github.event.comment.body, '@agy') || endsWith(github.event.comment.body, '@agy\n') || endsWith(github.event.comment.body, '@agy\r\n')) &&
+        github.event.comment.user.type != 'Bot'
+      )
     steps:
       - name: Checkout
         uses: actions/checkout@v4
