@@ -1,0 +1,25 @@
+name: Check status-dashboard's 5-minute schedule is actually firing
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ secrets.ACC0 }}
+    steps:
+      - name: List the last 20 deploy-status-feed.yml runs with real timestamps
+        run: |
+          set -e
+          gh run list --repo Mohammadlali/status-dashboard --workflow deploy-status-feed.yml \
+            --limit 20 \
+            --json databaseId,event,status,conclusion,createdAt,updatedAt \
+            --jq '.[] | .createdAt + "  " + .event + "  " + .status + "  " + (.conclusion // "-") + "  " + (.databaseId | tostring)'
+
+      - name: Confirm the cron in the live workflow file matches expectation
+        run: |
+          set -e
+          gh api repos/Mohammadlali/status-dashboard/contents/.github/workflows/deploy-status-feed.yml --jq '.content' \
+            | base64 -d | grep -A2 "^on:" | head -10
