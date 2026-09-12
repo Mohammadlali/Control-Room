@@ -1,0 +1,24 @@
+name: Peek at the Vercel protection fix run's real status
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  peek:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      GH_TOKEN: ${{ secrets.ACC0 }}
+      REPO: Mohammadlali/status-dashboard
+    steps:
+      - name: List recent runs
+        run: |
+          set -e
+          gh run list -R "$REPO" --workflow check-fix-vercel-protection.yml --limit 5 --json databaseId,status,conclusion,createdAt,updatedAt --jq '.[] | .createdAt + "  " + .status + "  " + (.conclusion // "-") + "  " + (.databaseId | tostring)'
+
+      - name: Show the latest run's log if it finished
+        run: |
+          set -e
+          RUN_ID=$(gh run list -R "$REPO" --workflow check-fix-vercel-protection.yml --limit 1 --json databaseId --jq '.[0].databaseId')
+          echo "latest run: $RUN_ID"
+          gh run view "$RUN_ID" -R "$REPO" --log || echo "log not ready yet"
