@@ -1,0 +1,74 @@
+name: Deploy status-dashboard nav+per-project redesign
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DST_TOKEN: ${{ secrets.ACC0 }}
+      REPO: Mohammadlali/status-dashboard
+      BRANCH: main
+    steps:
+      - name: Checkout control-room (for the staged files)
+        uses: actions/checkout@v4
+
+      - name: Clone Mohammadlali/status-dashboard
+        run: |
+          set -e
+          AUTH_HEADER="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$DST_TOKEN" | base64 -w0)"
+          echo "AUTH_HEADER=$AUTH_HEADER" >> "$GITHUB_ENV"
+          git -c http.https://github.com/.extraHeader="$AUTH_HEADER" \
+            clone --branch "$BRANCH" --single-branch \
+            "https://github.com/$REPO.git" /tmp/sd
+          cd /tmp/sd
+          git config user.email "control-room-bot@claud-cloud.local"
+          git config user.name "Control Room Bot"
+          git log --oneline -3
+
+      - name: Copy the staged files into place
+        run: |
+          set -e
+          SRC=".github/deploy-staging/status-dashboard-update"
+          cp "$SRC/index.html" /tmp/sd/index.html
+          cp "$SRC/app.js" /tmp/sd/app.js
+          cp "$SRC/style.css" /tmp/sd/style.css
+          cp "$SRC/collect_status_feed.py" /tmp/sd/Tools/collect_status_feed.py
+          cd /tmp/sd
+          git status --short
+
+      - name: Sanity checks before committing
+        run: |
+          set -e
+          cd /tmp/sd
+          python3 -c "import ast; ast.parse(open('Tools/collect_status_feed.py').read())"
+          node --check app.js
+          grep -q "<html" index.html
+          grep -q "menu-panel" index.html
+          grep -q "projects-grid" index.html
+          echo "ALL SANITY CHECKS PASSED"
+
+      - name: Commit and push
+        run: |
+          set -e
+          cd /tmp/sd
+          git add index.html app.js style.css Tools/collect_status_feed.py
+          if git diff --cached --quiet; then
+            echo "No changes -- already up to date."
+            exit 0
+          fi
+          git commit -m "Redesign nav to dropdown menu; track projects independent of accounts (details in Mohammadlali/control-room CHANGELOG 4032efc)"
+          n=0
+          until git -c http.https://github.com/.extraHeader="$AUTH_HEADER" push origin "HEAD:$BRANCH"; do
+            n=$((n+1))
+            if [ "$n" -ge 4 ]; then echo "push failed after 4 attempts"; exit 1; fi
+            sleep $((2 ** n))
+            git -c http.https://github.com/.extraHeader="$AUTH_HEADER" fetch origin "$BRANCH"
+            git rebase "origin/$BRANCH"
+          done
+          echo "Pushed: $(git rev-parse --short HEAD)"
