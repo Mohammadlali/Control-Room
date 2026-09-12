@@ -1,0 +1,58 @@
+name: Record real hash 3d4b5c6 on ACC6 CHANGELOG
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      DST_TOKEN: ${{ secrets.ACC6 }}
+    steps:
+      - name: Guard
+        run: |
+          if [ -z "$DST_TOKEN" ]; then
+            echo "::error::secrets.ACC6 is not set on this repo."
+            exit 1
+          fi
+
+      - name: Clone ACC6's Claud-Cloud-Project directly
+        run: |
+          set -e
+          AUTH_HEADER="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$DST_TOKEN" | base64 -w0)"
+          git -c http.https://github.com/.extraHeader="$AUTH_HEADER" \
+            clone --branch claude/gateway-auth-fix-nr7k0b --single-branch \
+            "https://github.com/mohammadlali0707-stack/Claud-Cloud-Project.git" /tmp/ccp
+
+      - name: Replace placeholder with the real hash
+        working-directory: /tmp/ccp
+        run: |
+          set -e
+          python3 - <<'PYEOF'
+          path = "Team/CHANGELOG.md"
+          with open(path, encoding="utf-8") as f:
+              content = f.read()
+          old = "`(this repo's hash follows in a \\`changelog:\\` follow-up)`"
+          new = "`3d4b5c6`"
+          if old not in content:
+              raise SystemExit("placeholder not found -- refusing to guess")
+          if content.count(old) != 1:
+              raise SystemExit("placeholder not unique -- refusing to guess")
+          content = content.replace(old, new)
+          with open(path, "w", encoding="utf-8") as f:
+              f.write(content)
+          print("Replaced.")
+          PYEOF
+
+      - name: Commit and push
+        working-directory: /tmp/ccp
+        run: |
+          set -e
+          git config user.email "control-room-bot@claud-cloud.local"
+          git config user.name "Control Room Bot"
+          git add Team/CHANGELOG.md
+          git commit -m "changelog: record 3d4b5c6"
+          AUTH_HEADER="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$DST_TOKEN" | base64 -w0)"
+          git -c http.https://github.com/.extraHeader="$AUTH_HEADER" push origin HEAD:claude/gateway-auth-fix-nr7k0b
+          echo "Pushed."
