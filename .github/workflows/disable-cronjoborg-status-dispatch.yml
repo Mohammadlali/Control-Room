@@ -1,0 +1,80 @@
+name: Disable the cron-job.org dispatch (status refresh now runs natively)
+
+# Found live 2026-09-12: cron-job.org was STILL calling
+# status-dashboard's deploy-status-feed.yml workflow_dispatch endpoint
+# every 5 minutes (confirmed via that workflow's own run history --
+# event: workflow_dispatch, every ~5 minutes, non-stop). That workflow
+# now deploys real Vercel code on every single one of those calls with no
+# skip condition, which is exactly the mechanism that was blowing through
+# Vercel's 100-deployments/day free-tier cap. Now that the 5-minute DATA
+# refresh runs on its own native GitHub Actions `schedule:` inside
+# agw-workers/deploy-status-feed-remote.yml (a public repo, unlimited
+# Actions minutes), the external cron-job.org dispatcher is not just
+# redundant, it is actively harmful -- it must be disabled, not repointed.
+#
+# Uses jq for all JSON handling, not embedded multi-line python3 -c: an
+# earlier workflow in this repo (repoint-cron-job-to-agw-workers.yml,
+# still broken/unpushed) hit the classic trap where unindented Python
+# lines inside a `run: |` block end the YAML literal scalar early. jq
+# avoids the whole class of bug.
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  disable:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      CRONJOB_API_KEY: ${{ secrets.AgentWorkflowGHCron }}
+    steps:
+      - name: Guard
+        run: |
+          set -e
+          if [ -z "$CRONJOB_API_KEY" ]; then echo "::error::secrets.AgentWorkflowGHCron is not set"; exit 1; fi
+
+      - name: Find the job targeting status-dashboard's deploy-status-feed.yml
+        id: find
+        run: |
+          set -e
+          curl -s -H "Authorization: Bearer $CRONJOB_API_KEY" "https://api.cron-job.org/jobs" > /tmp/jobs.json
+          JOB_ID=$(jq -r '.jobs[] | select((.url | contains("status-dashboard")) and (.url | contains("deploy-status-feed"))) | .jobId' /tmp/jobs.json | head -1)
+          echo "job_id=$JOB_ID" >> "$GITHUB_OUTPUT"
+          if [ -z "$JOB_ID" ]; then
+            echo "No matching cron-job.org job found -- nothing to disable (already gone, or never existed)."
+          else
+            echo "Found job $JOB_ID -- disabling it."
+          fi
+
+      - name: Disable the job (PATCH enabled=false, do not delete history)
+        if: steps.find.outputs.job_id != ''
+        env:
+          JOB_ID: ${{ steps.find.outputs.job_id }}
+        run: |
+          set -e
+          CODE=$(curl -s -o /tmp/patch_result.json -w "%{http_code}" \
+            -X PATCH \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $CRONJOB_API_KEY" \
+            -d '{"job": {"enabled": false}}' \
+            "https://api.cron-job.org/jobs/$JOB_ID")
+          echo "HTTP $CODE"
+          cat /tmp/patch_result.json
+          if [ "$CODE" != "200" ]; then
+            echo "::error::PATCH failed"
+            exit 1
+          fi
+
+      - name: Verify it is now disabled
+        if: steps.find.outputs.job_id != ''
+        env:
+          JOB_ID: ${{ steps.find.outputs.job_id }}
+        run: |
+          set -e
+          curl -s -H "Authorization: Bearer $CRONJOB_API_KEY" "https://api.cron-job.org/jobs/$JOB_ID" > /tmp/verify.json
+          ENABLED=$(jq -r 'if has("jobDetails") then .jobDetails.enabled else .enabled end' /tmp/verify.json)
+          if [ "$ENABLED" != "false" ]; then
+            echo "::error::job still enabled (enabled=$ENABLED)"
+            exit 1
+          fi
+          echo "CONFIRMED: cron-job.org job is now disabled."
