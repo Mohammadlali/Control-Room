@@ -211,13 +211,14 @@ jobs:
           export GH_TOKEN="$DISPATCH_TOKEN"
           echo "Dispatching issue #${{ github.event.issue.number }} to $DISPATCH_REPO (acc=$ACC_IDX)"
           PROMPT=$(cat /tmp/prompt.txt)
+          CALLBACK_ID="cr-${{ github.event.issue.number }}-${{ github.run_id }}"
           gh workflow run agw-worker.yml \
             --repo "$DISPATCH_REPO" \
             --field "prompt=$PROMPT" \
             --field "target_repo=Mohammadlali/Control-Room" \
             --field "target_branch=main" \
             --field "acc_index=$(( ACC_IDX + 1 ))" \
-            --field "callback_id=cr-${{ github.event.issue.number }}-${{ github.run_id }}"
+            --field "callback_id=$CALLBACK_ID"
           sleep 10
           RUN_ID=$(gh run list --repo "$DISPATCH_REPO" \
             --workflow agw-worker.yml --limit 1 --json databaseId -q '.[0].databaseId')
@@ -231,10 +232,21 @@ jobs:
             sleep 30
           done
 
-          mkdir -p /tmp/agy-out
-          gh run download "$RUN_ID" --repo "$DISPATCH_REPO" --dir /tmp/agy-out 2>/dev/null || true
-          OUT=$(find /tmp/agy-out -name "agy_output.txt" | head -1)
-          [ -n "$OUT" ] && head -c 58000 "$OUT" > /tmp/final.txt || printf '%s\n' '(no output)' > /tmp/final.txt
+          # Fetch the agent's raw output from THIS repo's own content
+          # (Reports/agy/<callback_id>.txt, committed by agw-worker.yml as
+          # part of its push) via the Contents API, instead of
+          # `gh run download`. That pulled a PUBLIC Actions artifact off
+          # the dispatch repo (agw-workers), which is a public repo with
+          # no relation to who is allowed to read this issue -- the
+          # Contents API call below reads from Control-Room itself, under
+          # this repo's own access rules.
+          GH_TOKEN="$ACC0_PAT" gh api "repos/Mohammadlali/Control-Room/contents/Reports/agy/${CALLBACK_ID}.txt" \
+            --jq '.content' 2>/dev/null | base64 -d > /tmp/final_raw.txt || true
+          if [ -s /tmp/final_raw.txt ]; then
+            head -c 58000 /tmp/final_raw.txt > /tmp/final.txt
+          else
+            printf '%s\n' '(no output found -- the worker may have failed before it could commit its output)' > /tmp/final.txt
+          fi
 
       - name: Post result
         if: github.event_name != 'workflow_dispatch' && steps.dispatch.outcome == 'success'
