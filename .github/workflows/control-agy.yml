@@ -134,6 +134,7 @@ jobs:
           ISSUE_BODY: ${{ github.event.issue.body }}
           ISSUE_NUM: ${{ github.event.issue.number }}
           COMMENT_BODY: ${{ github.event.comment.body }}
+          ISSUE_LABELS: ${{ join(github.event.issue.labels.*.name, ',') }}
         run: |
           BRANCH='main'
           sanitize() { sed "s/\`/'/g; s/\"/'/g; s/\$(/DOLLAR(/g; s/\${/DOLLAR{/g"; }
@@ -141,6 +142,12 @@ jobs:
           SAFE_BODY=$(printf '%s' "$ISSUE_BODY" | sanitize)
           SAFE_COMMENT=$(printf '%s' "$COMMENT_BODY" | sanitize)
           README=$(cat README.md 2>/dev/null | sanitize | head -50 || printf '%s' '(not found)')
+          START_HERE=$(cat Team/START_HERE.md 2>/dev/null | sanitize || printf '%s' '(not found)')
+          SCOPE=$(cat Team/COMPANY_SCOPE.md 2>/dev/null | sanitize || printf '%s' '(not found)')
+          case ",$ISSUE_LABELS," in
+            *,mode:quick_chat,*) QUICK_CHAT=1 ;;
+            *) QUICK_CHAT=0 ;;
+          esac
           {
             printf '%s\n' 'You are AGY, an AI software engineer for Control-Room.'
             printf '%s\n' 'Control-Room is the central management repo for a 9-account GitHub org (ACC0-ACC8). ACC0 handles management only; no other project ever runs here.'
@@ -161,6 +168,12 @@ jobs:
             printf '%s\n' '=== PROJECT README ==='
             printf '%s\n' "$README"
             printf '%s\n' ''
+            printf '%s\n' '=== COMPANY OVERVIEW (Team/START_HERE.md) ==='
+            printf '%s\n' "$START_HERE"
+            printf '%s\n' ''
+            printf '%s\n' '=== COMPANY SCOPE (Team/COMPANY_SCOPE.md) ==='
+            printf '%s\n' "$SCOPE"
+            printf '%s\n' ''
             printf 'TASK - Issue #%s: %s\n' "$ISSUE_NUM" "$SAFE_TITLE"
             printf '%s\n' "$SAFE_BODY"
             if [ -n "$SAFE_COMMENT" ]; then
@@ -169,15 +182,25 @@ jobs:
               printf '%s\n' "$SAFE_COMMENT"
             fi
             printf '%s\n' ''
-            printf '%s\n' '=== REQUIRED STEPS ==='
-            printf '%s\n' 'STEP 0: Read the files relevant to this task and print a short DETAILED'
-            printf '%s\n' '  planning checklist to stdout (exact file + function + evidence per item).'
-            printf '%s\n' '  This is printed output only -- do not post it anywhere yourself.'
-            printf '%s\n' 'STEP 1: Implement the task.'
-            printf '%s\n' 'STEP 2: python3 Tools/run_gates.py (must pass).'
-            printf '%s\n' 'STEP 3: Update Team/CHANGELOG.md'
-            printf '%s\n' "STEP 4: git add -A && git commit -m 'message'  (no push -- see above)"
-            printf '%s\n' 'STEP 5: Print a final report to stdout, including the commit hash you made.'
+            if [ "$QUICK_CHAT" = "1" ]; then
+              printf '%s\n' '=== MODE: QUICK CHAT (mode:quick_chat label) ==='
+              printf '%s\n' 'This is a quick question from the owner via the status-dashboard chat widget,'
+              printf '%s\n' 'not a work request. Using ONLY the company overview above (and the README),'
+              printf '%s\n' 'answer it directly and honestly -- say so if the answer is not in these docs'
+              printf '%s\n' 'rather than guessing. Do NOT edit, commit, or push any file, and do NOT run'
+              printf '%s\n' 'Tools/run_gates.py. Just print your answer to stdout as your final report --'
+              printf '%s\n' 'the pipeline posts it as a comment on this issue on its own.'
+            else
+              printf '%s\n' '=== REQUIRED STEPS ==='
+              printf '%s\n' 'STEP 0: Read the files relevant to this task and print a short DETAILED'
+              printf '%s\n' '  planning checklist to stdout (exact file + function + evidence per item).'
+              printf '%s\n' '  This is printed output only -- do not post it anywhere yourself.'
+              printf '%s\n' 'STEP 1: Implement the task.'
+              printf '%s\n' 'STEP 2: python3 Tools/run_gates.py (must pass).'
+              printf '%s\n' 'STEP 3: Update Team/CHANGELOG.md'
+              printf '%s\n' "STEP 4: git add -A && git commit -m 'message'  (no push -- see above)"
+              printf '%s\n' 'STEP 5: Print a final report to stdout, including the commit hash you made.'
+            fi
           } > /tmp/prompt.txt
           ACC_IDX=$(( ISSUE_NUM % 9 ))
           echo "acc_index=$ACC_IDX" >> "$GITHUB_OUTPUT"
