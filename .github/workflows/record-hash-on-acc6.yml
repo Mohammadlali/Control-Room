@@ -33,8 +33,8 @@ jobs:
           path = "Team/CHANGELOG.md"
           with open(path, encoding="utf-8") as f:
               content = f.read()
-          old = "`(this repo's hash follows in a \\`changelog:\\` follow-up)`"
-          new = "`3d4b5c6`"
+          old = "`(this repo's hash follows in a \\`changelog:\\` follow-up)` -- moved the status dashboard"
+          new = "`3d4b5c6` -- moved the status dashboard"
           if old not in content:
               raise SystemExit("placeholder not found -- refusing to guess")
           if content.count(old) != 1:
