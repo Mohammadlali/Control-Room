@@ -1,0 +1,143 @@
+name: Retire check_status_feed_freshness gate on ACC6
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DST_TOKEN: ${{ secrets.ACC6 }}
+      BRANCH: claude/gateway-auth-fix-nr7k0b
+      REPO: mohammadlali0707-stack/Claud-Cloud-Project
+    steps:
+      - name: Clone ACC6's Claud-Cloud-Project
+        run: |
+          set -e
+          AUTH_HEADER="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$DST_TOKEN" | base64 -w0)"
+          echo "AUTH_HEADER=$AUTH_HEADER" >> "$GITHUB_ENV"
+          git -c http.https://github.com/.extraHeader="$AUTH_HEADER" \
+            clone --branch "$BRANCH" --single-branch \
+            "https://github.com/$REPO.git" /tmp/ccp
+          cd /tmp/ccp
+          git config user.email "control-room-bot@claud-cloud.local"
+          git config user.name "Control Room Bot"
+          echo "--- pre-patch HEAD ---"
+          git log --oneline -3
+          wc -l Team/MAP.md Team/NEW_SESSION_PROMPT.md
+
+      - name: Decode helper scripts
+        run: |
+          set -e
+          echo 'aW1wb3J0IHN5cwoKCmRlZiBzbGljZV9yZXBsYWNlKGNvbnRlbnQsIHN0YXJ0X21hcmtlciwgZW5kX21hcmtlciwgbmV3X3RleHQsIGxhYmVsKToKICAgICIiIlJlcGxhY2UgZXZlcnl0aGluZyBmcm9tIHN0YXJ0X21hcmtlciAoaW5jbHVzaXZlKSB1cCB0byBlbmRfbWFya2VyCiAgICAoZXhjbHVzaXZlKSB3aXRoIG5ld190ZXh0LiBCb3RoIG1hcmtlcnMgbXVzdCBhcHBlYXIgZXhhY3RseSBvbmNlLiIiIgogICAgaWYgY29udGVudC5jb3VudChzdGFydF9tYXJrZXIpICE9IDE6CiAgICAgICAgcHJpbnQoInswfTogc3RhcnQgbWFya2VyIG5vdCBmb3VuZCBvciBub3QgdW5pcXVlICh7MX0pIi5mb3JtYXQoCiAgICAgICAgICAgIGxhYmVsLCBjb250ZW50LmNvdW50KHN0YXJ0X21hcmtlcikpLCBmaWxlPXN5cy5zdGRlcnIpCiAgICAgICAgc3lzLmV4aXQoMSkKICAgIHN0YXJ0ID0gY29udGVudC5pbmRleChzdGFydF9tYXJrZXIpCiAgICBlbmQgPSBjb250ZW50LmluZGV4KGVuZF9tYXJrZXIsIHN0YXJ0KQogICAgaWYgZW5kID09IC0xOgogICAgICAgIHByaW50KCJ7MH06IGVuZCBtYXJrZXIgbm90IGZvdW5kIGFmdGVyIHN0YXJ0Ii5mb3JtYXQobGFiZWwpLCBmaWxlPXN5cy5zdGRlcnIpCiAgICAgICAgc3lzLmV4aXQoMSkKICAgIHJldHVybiBjb250ZW50WzpzdGFydF0gKyBuZXdfdGV4dCArIGNvbnRlbnRbZW5kOl0KCgpkZWYgbXVzdF9kZWxldGUoY29udGVudCwgYmxvY2ssIGxhYmVsKToKICAgIGlmIGNvbnRlbnQuY291bnQoYmxvY2spICE9IDE6CiAgICAgICAgcHJpbnQoInswfTogYmxvY2sgbm90IGZvdW5kIG9yIG5vdCB1bmlxdWUgKHsxfSkiLmZvcm1hdCgKICAgICAgICAgICAgbGFiZWwsIGNvbnRlbnQuY291bnQoYmxvY2spKSwgZmlsZT1zeXMuc3RkZXJyKQogICAgICAgIHN5cy5leGl0KDEpCiAgICByZXR1cm4gY29udGVudC5yZXBsYWNlKGJsb2NrLCAiIiwgMSkKCgpkZWYgbXVzdF9yZXBsYWNlKGNvbnRlbnQsIG9sZCwgbmV3LCBsYWJlbCk6CiAgICBpZiBjb250ZW50LmNvdW50KG9sZCkgIT0gMToKICAgICAgICBwcmludCgiezB9OiBvbGQgdGV4dCBub3QgZm91bmQgb3Igbm90IHVuaXF1ZSAoezF9KSIuZm9ybWF0KAogICAgICAgICAgICBsYWJlbCwgY29udGVudC5jb3VudChvbGQpKSwgZmlsZT1zeXMuc3RkZXJyKQogICAgICAgIHN5cy5leGl0KDEpCiAgICByZXR1cm4gY29udGVudC5yZXBsYWNlKG9sZCwgbmV3LCAxKQoKCiMgLS0tLS0tLS0tLSBUZWFtL01BUC5tZCAtLS0tLS0tLS0tCnBhdGggPSAiVGVhbS9NQVAubWQiCndpdGggb3BlbihwYXRoLCBlbmNvZGluZz0idXRmLTgiKSBhcyBmOgogICAgY29udGVudCA9IGYucmVhZCgpCgpORVdfQkxPQ0sgPSAiIiIjIyMgMjAyNi0wOS0xMiAtLSBTdGF0dXNGZWVkIE1PVkVEIHRvIGBNb2hhbW1hZGxhbGkvc3RhdHVzLWRhc2hib2FyZGA7IGl0cyBnYXRlIHJldGlyZWQKCioqT3duZXI6IHRoZSBkYXNoYm9hcmQgY292ZXJzIENDUCArIENvbnRyb2wtUm9vbSArIGFsbCA5IGFjY291bnRzLCBpc24ndApDQ1Atc3BlY2lmaWMsIGJlbG9uZ3MgdW5kZXIgQUNDMCAoZmxlZXQgbWFuYWdlcikuKiogTW92ZWQgdG8KYE1vaGFtbWFkbGFsaS9zdGF0dXMtZGFzaGJvYXJkYCAobmV3LCBwdWJsaWMpOyBzZWNyZXQgbWlncmF0aW9uLApmaXJzdC1kZXBsb3kgdmVyaWZpY2F0aW9uLCBhbmQgdHdvIGtub3duIG5vbi1ibG9ja2luZyBnYXBzIChgc3RhdHVzLmpzb25gCm5ldmVyIGdpdC1jb21taXRzIHRoZXJlIC0tIGBnaXQgZGlmZmAgaWdub3JlcyBhbiB1bnRyYWNrZWQgZmlsZSAtLSBhbmQgYW4KUjIgU1NMIGhhbmRzaGFrZSBmYWlsdXJlKSBhcmUgaW4gQ0hBTkdFTE9HJ3Mgc2FtZS1kYXkgZW50cnkuIFJlbW92ZWQgZnJvbQpoZXJlOiBgU3RhdHVzRmVlZC9gLCBgZGVwbG95LXN0YXR1cy1mZWVkLnltbGAsIGBjb2xsZWN0X3N0YXR1c19mZWVkLnB5YC8KYHNlbmRfcHVzaF9ub3RpZmljYXRpb24ucHlgL2BlbnN1cmVfY2xvdWRmbGFyZV9kbnMucHlgIChgYmFja2xvZy1kaXNwYXRjaGVyLnltbGAgdW50b3VjaGVkOyBzZWNyZXRzIGNvcGllZCwgbm90IG1vdmVkKS4KCioqR2F0ZSBjb25zZXF1ZW5jZSwgbm93IGNsb3NlZDoqKiBgY2hlY2tfc3RhdHVzX2ZlZWRfZnJlc2huZXNzYC9gcHJvYmVfYApyZXRpcmVkIGZyb20gdGhpcyBsaXN0IGFuZCBgTkVXX1NFU1NJT05fUFJPTVBULm1kYCAoNDktPjQ3KSwgdG9vbCBmaWxlcwpkZWxldGVkLCBgUlVMRVMubWRgIHJlZ2VuZXJhdGVkLCBgdmVyaWZ5X2NsYWltcy5weWAgZ2l2ZW4gYSBmcm96ZW4KYFJFVElSRURfMjAyNl8wOV8xMmAgZXhlbXB0aW9uLCBzYW1lIHNoYXBlIGFzIHRoZSAwOS0xMSBVRTUgb25lLgoKIiIiCgpjb250ZW50ID0gc2xpY2VfcmVwbGFjZSgKICAgIGNvbnRlbnQsCiAgICAiIyMjIDIwMjYtMDktMTIgLS0gU3RhdHVzRmVlZCBNT1ZFRCBvdXQgb2YgdGhpcyByZXBvIGVudGlyZWx5IiwKICAgICIjIyMgMjAyNi0wOS0xMSAodmVyeSBsYXRlc3QpIiwKICAgIE5FV19CTE9DSywKICAgICJNQVAubWQgQ1VSUkVOVCBTVEFURSBibG9jayIpCgpjb250ZW50ID0gbXVzdF9kZWxldGUoCiAgICBjb250ZW50LAogICAgIiIiICAgIHB5dGhvbiBUb29scy9jaGVja19zdGF0dXNfZmVlZF9mcmVzaG5lc3MucHkgIyB0aGUgY3Jvc3MtYWNjb3VudCBzdGF0dXMgZmVlZCBpcyBub3QgbW9yZSB0aGFuIDNoIHN0YWxlCiAgICBweXRob24gVG9vbHMvcHJvYmVfY2hlY2tfc3RhdHVzX2ZlZWRfZnJlc2huZXNzLnB5ICMgLi4uYW5kIGl0IHJlamVjdHMgc3RhbGUsIG1hbGZvcm1lZCwgYW5kIG1pc3Npbmcgc3RhdHVzLmpzb24gYWxpa2UKIiIiLAogICAgIk1BUC5tZCBnYXRlIGNvbW1hbmQgbGluZXMiKQoKY29udGVudCA9IG11c3RfcmVwbGFjZSgKICAgIGNvbnRlbnQsCiAgICAiIiJVbnJlYWwtdG8tUmVuJ1B5IGNsZWFudXAgdGhpcyB3YXMgcGFydCBvZi4gNDkgZ2F0ZXMgcmVtYWluLCBjb21mb3J0YWJseQpvdmVyIGBydW5fZ2F0ZXMucHlgJ3MgYE1JTl9HQVRFUyA9IDI1YCBmbG9vci4iIiIsCiAgICAiIiJVbnJlYWwtdG8tUmVuJ1B5IGNsZWFudXAgdGhpcyB3YXMgcGFydCBvZi4KCioqMiBtb3JlIHJldGlyZWQgMjAyNi0wOS0xMioqIChgY2hlY2tfc3RhdHVzX2ZlZWRfZnJlc2huZXNzYC9gcHJvYmVfYCAtLQpTdGF0dXNGZWVkIG1vdmVkIG91dCwgc2VlIENIQU5HRUxPRykuIDQ3IHJlbWFpbiwgb3ZlciBgTUlOX0dBVEVTID0gMjVgLiIiIiwKICAgICJNQVAubWQgZ2F0ZS1jb3VudCBzZW50ZW5jZSIpCgp3aXRoIG9wZW4ocGF0aCwgInciLCBlbmNvZGluZz0idXRmLTgiKSBhcyBmOgogICAgZi53cml0ZShjb250ZW50KQpwcmludCgiTUFQLm1kIHBhdGNoZWQuIikKCiMgLS0tLS0tLS0tLSBUZWFtL05FV19TRVNTSU9OX1BST01QVC5tZCAtLS0tLS0tLS0tCnBhdGgyID0gIlRlYW0vTkVXX1NFU1NJT05fUFJPTVBULm1kIgp3aXRoIG9wZW4ocGF0aDIsIGVuY29kaW5nPSJ1dGYtOCIpIGFzIGY6CiAgICBjb250ZW50MiA9IGYucmVhZCgpCgpjb250ZW50MiA9IG11c3RfZGVsZXRlKAogICAgY29udGVudDIsCiAgICAiIiIgICAgcHl0aG9uIFRvb2xzL2NoZWNrX3N0YXR1c19mZWVkX2ZyZXNobmVzcy5weQogICAgcHl0aG9uIFRvb2xzL3Byb2JlX2NoZWNrX3N0YXR1c19mZWVkX2ZyZXNobmVzcy5weQoiIiIsCiAgICAiTkVXX1NFU1NJT05fUFJPTVBULm1kIGdhdGUgY29tbWFuZCBsaW5lcyIpCgpjb250ZW50MiA9IG11c3RfcmVwbGFjZSgKICAgIGNvbnRlbnQyLAogICAgIiIiaGVhZGluZykuIDQ5IHJlbWFpbjoiIiIsCiAgICAiIiJoZWFkaW5nKS4gKioyIG1vcmUgcmV0aXJlZCAyMDI2LTA5LTEyKiogKGBjaGVja19zdGF0dXNfZmVlZF9mcmVzaG5lc3NgLwpgcHJvYmVfY2hlY2tfc3RhdHVzX2ZlZWRfZnJlc2huZXNzYCAtLSBTdGF0dXNGZWVkIG1vdmVkIG91dCBlbnRpcmVseSB0bwpgTW9oYW1tYWRsYWxpL3N0YXR1cy1kYXNoYm9hcmRgLCBzZWUgTUFQLm1kJ3Mgb3duIG5vdGUpLiA0NyByZW1haW46IiIiLAogICAgIk5FV19TRVNTSU9OX1BST01QVC5tZCBnYXRlLWNvdW50IHNlbnRlbmNlIikKCndpdGggb3BlbihwYXRoMiwgInciLCBlbmNvZGluZz0idXRmLTgiKSBhcyBmOgogICAgZi53cml0ZShjb250ZW50MikKcHJpbnQoIk5FV19TRVNTSU9OX1BST01QVC5tZCBwYXRjaGVkLiIpCgojIC0tLS0tLS0tLS0gVG9vbHMvdmVyaWZ5X2NsYWltcy5weSAtLS0tLS0tLS0tCnBhdGgzID0gIlRvb2xzL3ZlcmlmeV9jbGFpbXMucHkiCndpdGggb3BlbihwYXRoMywgZW5jb2Rpbmc9InV0Zi04IikgYXMgZjoKICAgIGNvbnRlbnQzID0gZi5yZWFkKCkKCkFERElUSU9OID0gJycnCiMgU3RhdHVzRmVlZCBtb3ZlZCBvdXQgb2YgdGhpcyBwcm9qZWN0IGVudGlyZWx5IDIwMjYtMDktMTIsIHRvIGEgZGVkaWNhdGVkCiMgcmVwbyAoTW9oYW1tYWRsYWxpL3N0YXR1cy1kYXNoYm9hcmQpIC0tIGl0IHdhcyBuZXZlciBDQ1Atc3BlY2lmaWMsIGl0IGp1c3QKIyB1c2VkIHRvIGxpdmUgaGVyZS4gU2FtZSByZWFzb25pbmcgYXMgUkVUSVJFRF8yMDI2XzA5XzExLgpSRVRJUkVEXzIwMjZfMDlfMTIgPSBmcm96ZW5zZXQoWwogICAgIlRvb2xzL2NvbGxlY3Rfc3RhdHVzX2ZlZWQucHkiLCAiVG9vbHMvc2VuZF9wdXNoX25vdGlmaWNhdGlvbi5weSIsCiAgICAiVG9vbHMvZW5zdXJlX2Nsb3VkZmxhcmVfZG5zLnB5IiwgIlRvb2xzL2NoZWNrX3N0YXR1c19mZWVkX2ZyZXNobmVzcy5weSIsCiAgICAiVG9vbHMvcHJvYmVfY2hlY2tfc3RhdHVzX2ZlZWRfZnJlc2huZXNzLnB5IiwKICAgICIuZ2l0aHViL3dvcmtmbG93cy9kZXBsb3ktc3RhdHVzLWZlZWQueW1sIiwKXSkKCicnJwoKY29udGVudDMgPSBtdXN0X3JlcGxhY2UoCiAgICBjb250ZW50MywKICAgICdkZWYgcmV0aXJlZF9maWxlKGNpdGVkKTonLAogICAgQURESVRJT04gKyAnZGVmIHJldGlyZWRfZmlsZShjaXRlZCk6JywKICAgICJ2ZXJpZnlfY2xhaW1zLnB5IGluc2VydCBSRVRJUkVEXzIwMjZfMDlfMTIgc2V0IikKCmNvbnRlbnQzID0gbXVzdF9yZXBsYWNlKAogICAgY29udGVudDMsCiAgICAiICAgIGlmIGNpdGVkIGluIFJFVElSRURfMjAyNl8wOV8xMTpcbiAgICAgICAgcmV0dXJuIFRydWVcbiAgICByZXRpcmVkX3ByZWZpeGVzID0gKFwiU291cmNlL1wiLCBcIkRpc3RyaWN0cy9cIiwgXCJDb250ZW50L1wiLCBcIkpvYnMvXCIsXG4gICAgICAgICAgICAgICAgICAgICAgICBcIkNsb3VkL2NvbGFiL1wiLCBcIkNsb3VkL3J1bm5lci9cIikiLAogICAgIiAgICBpZiBjaXRlZCBpbiBSRVRJUkVEXzIwMjZfMDlfMTEgb3IgY2l0ZWQgaW4gUkVUSVJFRF8yMDI2XzA5XzEyOlxuICAgICAgICByZXR1cm4gVHJ1ZVxuICAgIHJldGlyZWRfcHJlZml4ZXMgPSAoXCJTb3VyY2UvXCIsIFwiRGlzdHJpY3RzL1wiLCBcIkNvbnRlbnQvXCIsIFwiSm9icy9cIixcbiAgICAgICAgICAgICAgICAgICAgICAgIFwiQ2xvdWQvY29sYWIvXCIsIFwiQ2xvdWQvcnVubmVyL1wiLCBcIlN0YXR1c0ZlZWQvXCIpIiwKICAgICJ2ZXJpZnlfY2xhaW1zLnB5IHdpZGVuIHJldGlyZWRfZmlsZSBib2R5IikKCndpdGggb3BlbihwYXRoMywgInciLCBlbmNvZGluZz0idXRmLTgiKSBhcyBmOgogICAgZi53cml0ZShjb250ZW50MykKcHJpbnQoInZlcmlmeV9jbGFpbXMucHkgcGF0Y2hlZC4iKQoKcHJpbnQoIkFMTCBQQVRDSEVTIEFQUExJRUQuIikK' | base64 -d > /tmp/patch.py
+          echo 'RU5UUlkgPSAiIiIKLSBgKHRoaXMgcmVwbydzIGhhc2ggZm9sbG93cyBpbiBhIGBjaGFuZ2Vsb2c6YCBmb2xsb3ctdXApYCAtLSBgVG9vbHMvY2hlY2tfc3RhdHVzX2ZlZWRfZnJlc2huZXNzLnB5YCwgYFRvb2xzL3Byb2JlX2NoZWNrX3N0YXR1c19mZWVkX2ZyZXNobmVzcy5weWAgKGRlbGV0ZWQpLCBgVGVhbS9NQVAubWRgLCBgVGVhbS9ORVdfU0VTU0lPTl9QUk9NUFQubWRgLCBgVGVhbS9SVUxFUy5tZGAsIGBUb29scy92ZXJpZnlfY2xhaW1zLnB5YDogcmV0aXJlZCB0aGUgYGNoZWNrX3N0YXR1c19mZWVkX2ZyZXNobmVzc2AgZ2F0ZSBvbiBBQ0M2LCB0aGUgbGl2ZSBjb3B5IHdoZXJlIHRoaXMgZ2F0ZSBhY3R1YWxseSBzdGlsbCBleGVjdXRlcyAtLSBzYW1lIGZpeCBhbHJlYWR5IGNvbW1pdHRlZCBvbiB0aGUgbm93LXBlcm1hbmVudGx5LW9ycGhhbmVkIEFDQzAgY2hlY2tvdXQgYXMgYDNiOTBjMWNgICh1bnB1c2hhYmxlIGZyb20gdGhlcmUpLCBhcHBsaWVkIGhlcmUgZm9yIHJlYWwgdmlhIGBNb2hhbW1hZGxhbGkvY29udHJvbC1yb29tYCdzIGNyb3NzLWFjY291bnQgYnJpZGdlIChgZml4LWdhdGUtcmV0aXJlbWVudC1vbi1hY2M2LnltbGAsIHVzaW5nIGBzZWNyZXRzLkFDQzZgKS4gT3duZXIgYXNrZWQgZGlyZWN0bHkgdG8gZml4IHRoZSBvbmUgYnJva2VuIGdhdGUuIFNhbWUgcnVsZSBhcyB0aGUgMjAyNi0wOS0xMSBVRTUgcmV0aXJlbWVudDogYSBnYXRlIHdob3NlIHN1YmplY3QgbWF0dGVyIGlzIGdlbnVpbmVseSBnb25lIGlzIHJldGlyZWQsIG5vdCB3ZWFrZW5lZC4gU3RhdHVzRmVlZCBtb3ZlZCBvdXQgb2YgdGhpcyBwcm9qZWN0IGVudGlyZWx5IDIwMjYtMDktMTIgKHRvIGBNb2hhbW1hZGxhbGkvc3RhdHVzLWRhc2hib2FyZGAsIGEgc2VwYXJhdGUgZGVkaWNhdGVkIHJlcG8pLCBzbyBhIGdhdGUgbWVhc3VyaW5nIGBTdGF0dXNGZWVkL3N0YXR1cy5qc29uYCdzIGZyZXNobmVzcyBoYXMgbm90aGluZyBsZWZ0IHRvIGV2ZXIgbWVhc3VyZSBhZ2Fpbi4gUmVtb3ZlZCBib3RoIGxpc3QgZW50cmllcyBmcm9tIGBUZWFtL01BUC5tZGAgYW5kIGBUZWFtL05FV19TRVNTSU9OX1BST01QVC5tZGAgKDQ5IC0+IDQ3LCBjcm9zcy1jaGVja2VkIGVxdWFsIGJ5IGBjaGVja19oYW5kb3Zlci5weWApLCBkZWxldGVkIHRoZSB0d28gdG9vbCBmaWxlcywgcmVnZW5lcmF0ZWQgYFRlYW0vUlVMRVMubWRgIHZpYSBgcHl0aG9uIFRvb2xzL3J1bGVzX2luZGV4LnB5IC0td3JpdGVgLCBhbmQgYWRkZWQgYSBmcm96ZW4gYFJFVElSRURfMjAyNl8wOV8xMmAgZXhlbXB0aW9uIHNldCB0byBgVG9vbHMvdmVyaWZ5X2NsYWltcy5weWAgKHNhbWUgc2hhcGUgYXMgYFJFVElSRURfMjAyNl8wOV8xMWApIHNvIGhpc3RvcmljYWwgcmVwb3J0cyBjb3JyZWN0bHkgY2l0aW5nIHRoZXNlIG5vdy1kZWxldGVkIHBhdGhzIGFyZSBub3QgdHJlYXRlZCBhcyBmYWJyaWNhdGlvbnMuIFZlcmlmaWVkIGJlZm9yZSBjb21taXQ6IGBjaGVja19oYW5kb3Zlci5weWAsIGB2ZXJpZnlfY2xhaW1zLnB5IC0tYWxsYCwgYGNoZWNrX3J1bGVzX2luZGV4LnB5YCBhbGwgcGFzcywgYFRlYW0vTUFQLm1kYCB1bmRlciBpdHMgOTAwLWxpbmUgY2VpbGluZyAtLSByZXRpcmluZyBjaGVja19zdGF0dXNfZmVlZF9mcmVzaG5lc3Mgb24gQUNDNiwgdGhlIGxpdmUgY29weS4KIiIiCgpwYXRoID0gIlRlYW0vQ0hBTkdFTE9HLm1kIgp3aXRoIG9wZW4ocGF0aCwgZW5jb2Rpbmc9InV0Zi04IikgYXMgZjoKICAgIGNvbnRlbnQgPSBmLnJlYWQoKQoKaWYgY29udGVudC5lbmRzd2l0aCgiXG4iKToKICAgIGNvbnRlbnQgPSBjb250ZW50WzotMV0gKyBFTlRSWQplbHNlOgogICAgY29udGVudCA9IGNvbnRlbnQgKyAiXG4iICsgRU5UUlkKCndpdGggb3BlbihwYXRoLCAidyIsIGVuY29kaW5nPSJ1dGYtOCIpIGFzIGY6CiAgICBmLndyaXRlKGNvbnRlbnQpCnByaW50KCJDSEFOR0VMT0cubWQgYXBwZW5kZWQuIikK' | base64 -d > /tmp/append_changelog.py
+          echo 'aW1wb3J0IHN5cwoKaGFzaDEgPSBzeXMuYXJndlsxXQpwYXRoID0gIlRlYW0vQ0hBTkdFTE9HLm1kIgp3aXRoIG9wZW4ocGF0aCwgZW5jb2Rpbmc9InV0Zi04IikgYXMgZjoKICAgIGNvbnRlbnQgPSBmLnJlYWQoKQoKcGxhY2Vob2xkZXIgPSAiYCh0aGlzIHJlcG8ncyBoYXNoIGZvbGxvd3MgaW4gYSBgY2hhbmdlbG9nOmAgZm9sbG93LXVwKWAiCk1BUktFUiA9ICJyZXRpcmluZyBjaGVja19zdGF0dXNfZmVlZF9mcmVzaG5lc3Mgb24gQUNDNiwgdGhlIGxpdmUgY29weS4iCgpjb3VudCA9IGNvbnRlbnQuY291bnQoTUFSS0VSKQppZiBjb3VudCAhPSAxOgogICAgcHJpbnQoIm1hcmtlciBub3QgdW5pcXVlICh7MH0pIC0tIHJlZnVzaW5nIHRvIGd1ZXNzIi5mb3JtYXQoY291bnQpLCBmaWxlPXN5cy5zdGRlcnIpCiAgICBzeXMuZXhpdCgxKQoKbWFya2VyX3BvcyA9IGNvbnRlbnQuaW5kZXgoTUFSS0VSKQpzZWdtZW50X3N0YXJ0ID0gY29udGVudC5yZmluZCgiXG4tIGAiLCAwLCBtYXJrZXJfcG9zKQppZiBzZWdtZW50X3N0YXJ0ID09IC0xOgogICAgcHJpbnQoImNvdWxkIG5vdCBsb2NhdGUgdGhlIHN0YXJ0IG9mIG91ciBvd24gY2hhbmdlbG9nIGJ1bGxldCIsIGZpbGU9c3lzLnN0ZGVycikKICAgIHN5cy5leGl0KDEpCnNlZ21lbnQgPSBjb250ZW50W3NlZ21lbnRfc3RhcnQ6bWFya2VyX3Bvc10KaWYgc2VnbWVudC5jb3VudChwbGFjZWhvbGRlcikgIT0gMToKICAgIHByaW50KCJwbGFjZWhvbGRlciBub3QgZm91bmQgZXhhY3RseSBvbmNlIGluIG91ciBvd24gYnVsbGV0ICh7MH0pIi5mb3JtYXQoCiAgICAgICAgc2VnbWVudC5jb3VudChwbGFjZWhvbGRlcikpLCBmaWxlPXN5cy5zdGRlcnIpCiAgICBzeXMuZXhpdCgxKQoKbmV3X3NlZ21lbnQgPSBzZWdtZW50LnJlcGxhY2UocGxhY2Vob2xkZXIsICJgIiArIGhhc2gxICsgImAiLCAxKQpjb250ZW50ID0gY29udGVudFs6c2VnbWVudF9zdGFydF0gKyBuZXdfc2VnbWVudCArIGNvbnRlbnRbbWFya2VyX3BvczpdCgp3aXRoIG9wZW4ocGF0aCwgInciLCBlbmNvZGluZz0idXRmLTgiKSBhcyBmOgogICAgZi53cml0ZShjb250ZW50KQpwcmludCgiQ0hBTkdFTE9HLm1kIGhhc2ggcmVjb3JkZWQ6ICIgKyBoYXNoMSkK' | base64 -d > /tmp/record_hash.py
+          python3 -c "import ast; ast.parse(open('/tmp/patch.py').read())"
+          python3 -c "import ast; ast.parse(open('/tmp/append_changelog.py').read())"
+          python3 -c "import ast; ast.parse(open('/tmp/record_hash.py').read())"
+          echo "all three helper scripts decoded and syntax-checked OK"
+
+      - name: Apply patch, delete retired tools, regenerate RULES.md
+        run: |
+          set -e
+          cd /tmp/ccp
+          python3 /tmp/patch.py
+          git rm -q Tools/check_status_feed_freshness.py Tools/probe_check_status_feed_freshness.py
+          python3 Tools/rules_index.py --write
+
+      - name: Verify BEFORE committing (file-level gates, no external secrets needed)
+        run: |
+          set -e
+          cd /tmp/ccp
+          echo "== check_handover.py =="
+          python3 Tools/check_handover.py
+          echo "== verify_claims.py --all =="
+          python3 Tools/verify_claims.py --all
+          echo "== check_rules_index.py =="
+          python3 Tools/check_rules_index.py
+          echo "== confirm retired files are gone =="
+          test ! -f Tools/check_status_feed_freshness.py
+          test ! -f Tools/probe_check_status_feed_freshness.py
+          echo "== confirm no leftover gate command lines =="
+          ! grep -n "^    python Tools/check_status_feed_freshness.py\|^    python Tools/probe_check_status_feed_freshness.py" Team/MAP.md Team/NEW_SESSION_PROMPT.md
+          echo "ALL PRE-COMMIT CHECKS PASSED."
+
+      - name: Append CHANGELOG entry, commit and push (first commit, placeholder hash)
+        run: |
+          set -e
+          cd /tmp/ccp
+          python3 /tmp/append_changelog.py
+          git add -A
+          git status --short
+          git commit -m "Retire check_status_feed_freshness gate on ACC6 (StatusFeed moved out entirely)"
+          n=0
+          until git -c http.https://github.com/.extraHeader="$AUTH_HEADER" push origin "HEAD:$BRANCH"; do
+            n=$((n+1))
+            if [ "$n" -ge 4 ]; then echo "push failed after 4 attempts"; exit 1; fi
+            sleep $((2 ** n))
+            git -c http.https://github.com/.extraHeader="$AUTH_HEADER" fetch origin "$BRANCH"
+            git rebase "origin/$BRANCH"
+          done
+          HASH1=$(git rev-parse --short HEAD)
+          echo "HASH1=$HASH1" >> "$GITHUB_ENV"
+          echo "First push landed: $HASH1"
+
+      - name: Record the real hash, commit and push (second commit, exempt from its own entry)
+        run: |
+          set -e
+          cd /tmp/ccp
+          python3 /tmp/record_hash.py "$HASH1"
+          git add Team/CHANGELOG.md
+          git commit -m "changelog: record $HASH1"
+          n=0
+          until git -c http.https://github.com/.extraHeader="$AUTH_HEADER" push origin "HEAD:$BRANCH"; do
+            n=$((n+1))
+            if [ "$n" -ge 4 ]; then echo "push failed after 4 attempts"; exit 1; fi
+            sleep $((2 ** n))
+            git -c http.https://github.com/.extraHeader="$AUTH_HEADER" fetch origin "$BRANCH"
+            git rebase "origin/$BRANCH"
+          done
+          HASH2=$(git rev-parse --short HEAD)
+          echo "Second push landed: $HASH2"
+
+      - name: Verify AFTER both commits (now including check_changelog.py)
+        run: |
+          set -e
+          cd /tmp/ccp
+          echo "== check_changelog.py =="
+          python3 Tools/check_changelog.py
+          echo "== check_handover.py =="
+          python3 Tools/check_handover.py
+          echo "== verify_claims.py --all =="
+          python3 Tools/verify_claims.py --all
+          echo "== check_rules_index.py =="
+          python3 Tools/check_rules_index.py
+          echo "ALL POST-COMMIT CHECKS PASSED."
+          wc -l Team/MAP.md
+
+      - name: Dispatch and watch ACC6's own real gate suite (tbs-gates.yml)
+        env:
+          GH_TOKEN: ${{ secrets.ACC6 }}
+        run: |
+          set -e
+          BEFORE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          gh workflow run tbs-gates.yml -R "$REPO" --ref "$BRANCH"
+          echo "dispatched, waiting for a new run to appear..."
+          RUN_ID=""
+          for i in $(seq 1 20); do
+            sleep 6
+            RUN_ID=$(gh run list -R "$REPO" --workflow tbs-gates.yml --branch "$BRANCH" \
+              --json databaseId,createdAt --jq \
+              "[.[] | select(.createdAt > \"$BEFORE\")] | .[0].databaseId // empty")
+            if [ -n "$RUN_ID" ]; then break; fi
+          done
+          if [ -z "$RUN_ID" ]; then
+            echo "no new tbs-gates.yml run appeared within 2 minutes -- cannot verify in-job"
+            exit 1
+          fi
+          echo "watching run $RUN_ID"
+          gh run watch "$RUN_ID" -R "$REPO" --exit-status
