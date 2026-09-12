@@ -1,0 +1,97 @@
+name: Audit @agy trigger convention across the fleet
+
+# Read-only. The owner wants every @agy listener across the fleet to
+# require a TRAILING @agy (matching ACC6's own agy-issue-bot.yml and this
+# repo's own control-agy.yml, both fixed to endsWith already) instead of
+# the leading-only convention this repo used before -- but changing a
+# listener's trigger format blind, without first knowing what each one
+# currently does, is exactly the mistake propagate-agw-worker-fix.yml made
+# (see CHANGELOG.md). This workflow only reports what each account
+# actually has, using each account's own bare ACC<N> PAT (already present
+# on this repo, same secrets propagate-agw-worker-fix.yml used) via the
+# read-only Contents API -- no checkout, no push, nothing changed anywhere.
+#
+# Covers two kinds of listener:
+#   1. Each of ACC1..ACC8's own <owner>/agw-workers repo -- the uniform
+#      same-repo self-dispatch bot every account has (agy-issue-bot.yml).
+#   2. The two real project repos with their OWN separate @agy listener,
+#      per Team/company_scope.json: AirboxVIP_Coffeenet (ACC1) and
+#      Claud-Cloud-Project (ACC6, the TBS repo). ACC0's own control-room
+#      and status-dashboard are covered by control-agy.yml directly, not
+#      by this workflow.
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      ACC1: ${{ secrets.ACC1 }}
+      ACC2: ${{ secrets.ACC2 }}
+      ACC3: ${{ secrets.ACC3 }}
+      ACC4: ${{ secrets.ACC4 }}
+      ACC5: ${{ secrets.ACC5 }}
+      ACC6: ${{ secrets.ACC6 }}
+      ACC7: ${{ secrets.ACC7 }}
+      ACC8: ${{ secrets.ACC8 }}
+    steps:
+      - name: Check each listener's @agy trigger convention
+        run: |
+          # acc_index|repo|path
+          ENTRIES=(
+            "1|momonakikugava-pixel/agw-workers|.github/workflows/agy-issue-bot.yml"
+            "2|lali94m-max/agw-workers|.github/workflows/agy-issue-bot.yml"
+            "3|ngocgminh5-debug/agw-workers|.github/workflows/agy-issue-bot.yml"
+            "4|hmmletssee7-design/agw-workers|.github/workflows/agy-issue-bot.yml"
+            "5|kidding602/agw-workers|.github/workflows/agy-issue-bot.yml"
+            "6|mohammadlali0707-stack/agw-workers|.github/workflows/agy-issue-bot.yml"
+            "7|mohammad97okk/agw-workers|.github/workflows/agy-issue-bot.yml"
+            "8|moradzahra85-png/agw-workers|.github/workflows/agy-issue-bot.yml"
+            "1|momonakikugava-pixel/AirboxVIP_Coffeenet|.github/workflows/agy-issue-bot.yml"
+            "6|mohammadlali0707-stack/Claud-Cloud-Project|.github/workflows/agy-issue-bot.yml"
+          )
+
+          {
+            echo "## @agy trigger convention audit"
+            echo ""
+            echo "| ACC | repo | file | convention | claude[bot] handoff accepted |"
+            echo "|---|---|---|---|---|"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          for entry in "${ENTRIES[@]}"; do
+            IFS='|' read -r IDX REPO PATH_ <<< "$entry"
+            eval "TOKEN=\$ACC$IDX"
+            if [ -z "$TOKEN" ]; then
+              echo "| $IDX | $REPO | $PATH_ | (no token: secrets.ACC$IDX missing) | - |" >> "$GITHUB_STEP_SUMMARY"
+              continue
+            fi
+            CODE=$(curl -sS -o /tmp/file.txt -w "%{http_code}" \
+              -H "Authorization: Bearer $TOKEN" \
+              -H "Accept: application/vnd.github.v3.raw" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/${REPO}/contents/${PATH_}")
+            if [ "$CODE" != "200" ]; then
+              echo "| $IDX | $REPO | $PATH_ | (HTTP $CODE -- file or repo not found, or no access) | - |" >> "$GITHUB_STEP_SUMMARY"
+              continue
+            fi
+            if grep -qE "endsWith\(github\.event\.(issue|comment)\.body, '@agy'\)" /tmp/file.txt; then
+              CONV="trailing (endsWith)"
+            elif grep -qE "startsWith\(github\.event\.(issue|comment)\.body, '@agy'\)" /tmp/file.txt; then
+              CONV="leading (startsWith)"
+            elif grep -q "'@agy'" /tmp/file.txt; then
+              CONV="mentions @agy, neither startsWith nor endsWith -- inspect manually"
+            else
+              CONV="no @agy trigger found in this file"
+            fi
+            if grep -q "claude\[bot\]" /tmp/file.txt; then
+              HANDOFF="yes"
+            else
+              HANDOFF="no"
+            fi
+            echo "| $IDX | $REPO | $PATH_ | $CONV | $HANDOFF |" >> "$GITHUB_STEP_SUMMARY"
+          done
+
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Read-only -- nothing was changed on any of the repos above." >> "$GITHUB_STEP_SUMMARY"
