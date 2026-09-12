@@ -1,0 +1,71 @@
+name: Set up cron-job.org to dispatch status-dashboard's deploy every 5 min
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      CRONJOB_API_KEY: ${{ secrets.AgentWorkflowGHCron }}
+      DISPATCH_PAT: ${{ secrets.STATUS_DASHBOARD_DISPATCH_PAT }}
+    steps:
+      - name: Guard
+        run: |
+          set -e
+          if [ -z "$CRONJOB_API_KEY" ]; then echo "::error::secrets.AgentWorkflowGHCron is not set"; exit 1; fi
+          if [ -z "$DISPATCH_PAT" ]; then echo "::error::secrets.STATUS_DASHBOARD_DISPATCH_PAT is not set"; exit 1; fi
+
+      - name: Decode helper scripts
+        run: |
+          set -e
+          echo 'aW1wb3J0IGpzb24KaW1wb3J0IHN5cwoKZGF0YSA9IGpzb24ubG9hZChzeXMuc3RkaW4pCnRhcmdldCA9ICgiaHR0cHM6Ly9hcGkuZ2l0aHViLmNvbS9yZXBvcy9Nb2hhbW1hZGxhbGkvc3RhdHVzLWRhc2hib2FyZCIKICAgICAgICAgICIvYWN0aW9ucy93b3JrZmxvd3MvZGVwbG95LXN0YXR1cy1mZWVkLnltbC9kaXNwYXRjaGVzIikKZm9yIGogaW4gZGF0YS5nZXQoImpvYnMiLCBbXSk6CiAgICBpZiBqLmdldCgidXJsIikgPT0gdGFyZ2V0OgogICAgICAgIHByaW50KGouZ2V0KCJqb2JJZCIpKQogICAgICAgIGJyZWFrCg==' | base64 -d > /tmp/find_existing_job.py
+          echo 'aW1wb3J0IGpzb24KaW1wb3J0IG9zCmltcG9ydCBzdWJwcm9jZXNzCgpwYXQgPSBvcy5lbnZpcm9uWyJESVNQQVRDSF9QQVQiXQphcGlfa2V5ID0gb3MuZW52aXJvblsiQ1JPTkpPQl9BUElfS0VZIl0KCnBheWxvYWQgPSB7CiAgICAiam9iIjogewogICAgICAgICJ1cmwiOiAoImh0dHBzOi8vYXBpLmdpdGh1Yi5jb20vcmVwb3MvTW9oYW1tYWRsYWxpL3N0YXR1cy1kYXNoYm9hcmQiCiAgICAgICAgICAgICAgICAgIi9hY3Rpb25zL3dvcmtmbG93cy9kZXBsb3ktc3RhdHVzLWZlZWQueW1sL2Rpc3BhdGNoZXMiKSwKICAgICAgICAiZW5hYmxlZCI6IFRydWUsCiAgICAgICAgInRpdGxlIjogInN0YXR1cy1kYXNoYm9hcmQ6IGRpc3BhdGNoIGRlcGxveS1zdGF0dXMtZmVlZC55bWwgZXZlcnkgNSBtaW4iLAogICAgICAgICJzYXZlUmVzcG9uc2VzIjogVHJ1ZSwKICAgICAgICAicmVxdWVzdE1ldGhvZCI6IDEsCiAgICAgICAgImV4dGVuZGVkRGF0YSI6IHsKICAgICAgICAgICAgImhlYWRlcnMiOiB7CiAgICAgICAgICAgICAgICAiQXV0aG9yaXphdGlvbiI6ICJCZWFyZXIgIiArIHBhdCwKICAgICAgICAgICAgICAgICJBY2NlcHQiOiAiYXBwbGljYXRpb24vdm5kLmdpdGh1Yitqc29uIiwKICAgICAgICAgICAgICAgICJYLUdpdEh1Yi1BcGktVmVyc2lvbiI6ICIyMDIyLTExLTI4IiwKICAgICAgICAgICAgICAgICJDb250ZW50LVR5cGUiOiAiYXBwbGljYXRpb24vanNvbiIsCiAgICAgICAgICAgIH0sCiAgICAgICAgICAgICJib2R5IjoganNvbi5kdW1wcyh7InJlZiI6ICJtYWluIn0pLAogICAgICAgIH0sCiAgICAgICAgInNjaGVkdWxlIjogewogICAgICAgICAgICAidGltZXpvbmUiOiAiVVRDIiwKICAgICAgICAgICAgImV4cGlyZXNBdCI6IDAsCiAgICAgICAgICAgICJob3VycyI6IFstMV0sCiAgICAgICAgICAgICJtZGF5cyI6IFstMV0sCiAgICAgICAgICAgICJtaW51dGVzIjogWzAsIDUsIDEwLCAxNSwgMjAsIDI1LCAzMCwgMzUsIDQwLCA0NSwgNTAsIDU1XSwKICAgICAgICAgICAgIm1vbnRocyI6IFstMV0sCiAgICAgICAgICAgICJ3ZGF5cyI6IFstMV0sCiAgICAgICAgfSwKICAgIH0KfQoKd2l0aCBvcGVuKCIvdG1wL2pvYl9wYXlsb2FkLmpzb24iLCAidyIpIGFzIGY6CiAgICBqc29uLmR1bXAocGF5bG9hZCwgZikKCnJlc3VsdCA9IHN1YnByb2Nlc3MucnVuKAogICAgWyJjdXJsIiwgIi1zIiwgIi13IiwgIlxuJXtodHRwX2NvZGV9IiwgIi1YIiwgIlBVVCIsCiAgICAgIi1IIiwgIkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbiIsCiAgICAgIi1IIiwgIkF1dGhvcml6YXRpb246IEJlYXJlciAiICsgYXBpX2tleSwKICAgICAiLWQiLCAiQC90bXAvam9iX3BheWxvYWQuanNvbiIsCiAgICAgImh0dHBzOi8vYXBpLmNyb24tam9iLm9yZy9qb2JzIl0sCiAgICBjYXB0dXJlX291dHB1dD1UcnVlLCB0ZXh0PVRydWUsCikKYm9keSwgY29kZSA9IHJlc3VsdC5zdGRvdXQucnNwbGl0KCJcbiIsIDEpCnByaW50KCJIVFRQIiwgY29kZSkKcHJpbnQoYm9keSkKaWYgY29kZSAhPSAiMjAwIjoKICAgIHJhaXNlIFN5c3RlbUV4aXQoImpvYiBjcmVhdGlvbiBmYWlsZWQiKQpyZXNwID0ganNvbi5sb2Fkcyhib2R5KQpqb2JfaWQgPSByZXNwLmdldCgiam9iSWQiKQppZiBub3Qgam9iX2lkOgogICAgcmFpc2UgU3lzdGVtRXhpdCgibm8gam9iSWQgaW4gcmVzcG9uc2UiKQp3aXRoIG9wZW4ob3MuZW52aXJvblsiR0lUSFVCX0VOViJdLCAiYSIpIGFzIGY6CiAgICBmLndyaXRlKCJORVdfSk9CX0lEPXswfVxuIi5mb3JtYXQoam9iX2lkKSkKcHJpbnQoIkNyZWF0ZWQgY3Jvbi1qb2Iub3JnIGpvYjoiLCBqb2JfaWQpCg==' | base64 -d > /tmp/create_cronjob.py
+          python3 -c "import ast; ast.parse(open('/tmp/find_existing_job.py').read())"
+          python3 -c "import ast; ast.parse(open('/tmp/create_cronjob.py').read())"
+          echo "helper scripts decoded and syntax-checked OK"
+
+      - name: Check the PAT can actually dispatch (fail fast before creating the cron job)
+        run: |
+          set -e
+          CODE=$(curl -s -o /tmp/dispatch_test.json -w "%{http_code}" \
+            -X POST \
+            -H "Authorization: Bearer $DISPATCH_PAT" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            -H "Content-Type: application/json" \
+            -d '{"ref":"main"}' \
+            "https://api.github.com/repos/Mohammadlali/status-dashboard/actions/workflows/deploy-status-feed.yml/dispatches")
+          echo "HTTP $CODE"
+          cat /tmp/dispatch_test.json 2>/dev/null || true
+          if [ "$CODE" != "204" ]; then
+            echo "::error::PAT dispatch test failed (expected 204)"
+            exit 1
+          fi
+          echo "PAT confirmed working: it just dispatched a real deploy-status-feed.yml run."
+
+      - name: Check whether a matching cron-job.org job already exists (idempotency)
+        id: existing
+        run: |
+          set -e
+          RESP=$(curl -s -H "Authorization: Bearer $CRONJOB_API_KEY" "https://api.cron-job.org/jobs")
+          echo "$RESP" > /tmp/existing_jobs.json
+          EXISTING_ID=$(echo "$RESP" | python3 /tmp/find_existing_job.py)
+          echo "existing_id=$EXISTING_ID" >> "$GITHUB_OUTPUT"
+          if [ -n "$EXISTING_ID" ]; then
+            echo "A job already targets this URL: jobId=$EXISTING_ID -- will not create a duplicate."
+          else
+            echo "No existing job targets this URL -- will create one."
+          fi
+
+      - name: Create the cron-job.org job (every 5 minutes, UTC)
+        if: steps.existing.outputs.existing_id == ''
+        run: python3 /tmp/create_cronjob.py
+
+      - name: Verify the created (or existing) job's real definition
+        run: |
+          set -e
+          JOB_ID="${NEW_JOB_ID:-${{ steps.existing.outputs.existing_id }}}"
+          echo "Verifying job $JOB_ID"
+          curl -s -H "Authorization: Bearer $CRONJOB_API_KEY" "https://api.cron-job.org/jobs/$JOB_ID" | python3 -m json.tool
