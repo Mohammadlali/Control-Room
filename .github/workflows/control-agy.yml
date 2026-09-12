@@ -56,7 +56,7 @@ jobs:
           PROJECT=$(jq -r '.project // ""' /tmp/route.json)
           echo "decision=$DECISION" >> "$GITHUB_OUTPUT"
           echo "project=$PROJECT" >> "$GITHUB_OUTPUT"
-          if [ "$DECISION" = "route" ] && [ "$PROJECT" != "control-room" ]; then
+          if [ "$DECISION" = "route" ] && [ "$PROJECT" != "control-room" ] && [ "$PROJECT" != "status_dashboard" ]; then
             HOST_ACCOUNT=$(jq -r '.host_account' /tmp/route.json)
             HOST_REPO=$(jq -r '.host_repo' /tmp/route.json)
             HOST_LOGIN=$(jq -r --arg acc "$HOST_ACCOUNT" '.accounts[$acc].login' Team/company_scope.json)
@@ -75,8 +75,8 @@ jobs:
           HOST_REPO: ${{ steps.route.outputs.host_repo }}
         run: |
           if [ "$DECISION" = "unclear" ]; then
-            BODY='Could not tell which project this is about. Add a `project:` label (`project:tbs`, `project:airboxvip`, or `project:control-room`) and reopen with a new `@agy` comment -- see Team/COMPANY_SCOPE.md.'
-          elif [ "$PROJECT" != "control-room" ]; then
+            BODY='Could not tell which project this is about. Add a `project:` label (`project:tbs`, `project:airboxvip`, `project:control-room`, or `project:status_dashboard`) and reopen with a new `@agy` comment -- see Team/COMPANY_SCOPE.md.'
+          elif [ "$PROJECT" != "control-room" ] && [ "$PROJECT" != "status_dashboard" ]; then
             BODY="Routed to $PROJECT ($HOST_LOGIN/$HOST_REPO) -- forwarding now, will link the mirrored issue here."
           else
             BODY='AGY is on it. Will reply when done.'
@@ -87,7 +87,7 @@ jobs:
 
       - name: Forward to another project's repo
         id: forward
-        if: github.event_name != 'workflow_dispatch' && steps.route.outputs.decision == 'route' && steps.route.outputs.project != 'control-room'
+        if: github.event_name != 'workflow_dispatch' && steps.route.outputs.decision == 'route' && steps.route.outputs.project != 'control-room' && steps.route.outputs.project != 'status_dashboard'
         env:
           HOST_LOGIN: ${{ steps.route.outputs.host_login }}
           HOST_REPO: ${{ steps.route.outputs.host_repo }}
