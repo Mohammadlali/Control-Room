@@ -1,0 +1,34 @@
+name: Revert Vercel ssoProtection to its original value
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  revert:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    steps:
+      - name: Restore ssoProtection to all_except_custom_domains (its value before today's change)
+        run: |
+          set -e
+          CODE=$(curl -s -o /tmp/patch_result.json -w "%{http_code}" -X PATCH -H "Authorization: Bearer $VERCEL_TOKEN" -H "Content-Type: application/json" -d '{"ssoProtection": {"deploymentType": "all_except_custom_domains"}}' "https://api.vercel.com/v9/projects/claud-cloud-status")
+          echo "HTTP $CODE"
+          if [ "$CODE" != "200" ]; then
+            echo "::error::PATCH failed"
+            cat /tmp/patch_result.json
+            exit 1
+          fi
+
+      - name: Verify the revert stuck
+        run: |
+          set -e
+          sleep 3
+          curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v9/projects/claud-cloud-status" > /tmp/project_after.json
+          python3 -c "import json,sys; d = json.load(open('/tmp/project_after.json')); sso = d.get('ssoProtection'); print('ssoProtection:', json.dumps(sso)); sys.exit(1) if (sso or {}).get('deploymentType') != 'all_except_custom_domains' else print('CONFIRMED: reverted to all_except_custom_domains')"
+
+      - name: Confirm the custom domain is still gated (this is now the intended, wanted state)
+        run: |
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" https://status.airboxvip.top/status.json)
+          echo "status.airboxvip.top/status.json -> HTTP $CODE"

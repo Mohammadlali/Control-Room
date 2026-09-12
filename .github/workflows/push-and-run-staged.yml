@@ -1,0 +1,72 @@
+name: Push and run a staged status-dashboard workflow (generic, reusable)
+
+on:
+  workflow_dispatch:
+    inputs:
+      filename:
+        description: 'Filename under .github/deploy-staging/status-dashboard-update/ to push and run'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  push-and-run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      DST_TOKEN: ${{ secrets.ACC0 }}
+      REPO: Mohammadlali/status-dashboard
+      BRANCH: main
+      FILENAME: ${{ inputs.filename }}
+    steps:
+      - name: Checkout control-room
+        uses: actions/checkout@v4
+
+      - name: Clone status-dashboard and add the workflow file
+        run: |
+          set -e
+          AUTH_HEADER="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$DST_TOKEN" | base64 -w0)"
+          echo "AUTH_HEADER=$AUTH_HEADER" >> "$GITHUB_ENV"
+          git -c http.https://github.com/.extraHeader="$AUTH_HEADER" \
+            clone --branch "$BRANCH" --single-branch \
+            "https://github.com/$REPO.git" /tmp/sd
+          mkdir -p /tmp/sd/.github/workflows
+          cp ".github/deploy-staging/status-dashboard-update/$FILENAME" "/tmp/sd/.github/workflows/$FILENAME"
+          cd /tmp/sd
+          git config user.email "control-room-bot@claud-cloud.local"
+          git config user.name "Control Room Bot"
+          python3 -c "import yaml; yaml.safe_load(open('.github/workflows/$FILENAME'))"
+          git add ".github/workflows/$FILENAME"
+          if git diff --cached --quiet; then
+            echo "Already staged identically -- no new commit needed."
+          else
+            git commit -m "Add/update one-off workflow: $FILENAME"
+            n=0
+            until git -c http.https://github.com/.extraHeader="$AUTH_HEADER" push origin "HEAD:$BRANCH"; do
+              n=$((n+1))
+              if [ "$n" -ge 4 ]; then exit 1; fi
+              sleep $((2 ** n))
+              git -c http.https://github.com/.extraHeader="$AUTH_HEADER" fetch origin "$BRANCH"
+              git rebase "origin/$BRANCH"
+            done
+          fi
+
+      - name: Dispatch and watch
+        env:
+          GH_TOKEN: ${{ secrets.ACC0 }}
+        run: |
+          set -e
+          BEFORE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          sleep 6
+          gh workflow run "$FILENAME" -R "$REPO" --ref "$BRANCH"
+          RUN_ID=""
+          for i in $(seq 1 15); do
+            sleep 5
+            RUN_ID=$(gh run list -R "$REPO" --workflow "$FILENAME" --branch "$BRANCH" --json databaseId,createdAt --jq "[.[] | select(.createdAt > \"$BEFORE\")] | .[0].databaseId // empty")
+            if [ -n "$RUN_ID" ]; then break; fi
+          done
+          if [ -z "$RUN_ID" ]; then echo "::error::no run found"; exit 1; fi
+          gh run watch "$RUN_ID" -R "$REPO" || true
+          gh run view "$RUN_ID" -R "$REPO" --log
