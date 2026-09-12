@@ -95,18 +95,18 @@ jobs:
           ISSUE_NUM: ${{ github.event.issue.number }}
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_BODY: ${{ github.event.issue.body }}
-          ACC0_PAT: ${{ secrets.ACC0_PAT }}
-          ACC1_PAT: ${{ secrets.ACC1_PAT }}
-          ACC2_PAT: ${{ secrets.ACC2_PAT }}
-          ACC3_PAT: ${{ secrets.ACC3_PAT }}
-          ACC4_PAT: ${{ secrets.ACC4_PAT }}
-          ACC5_PAT: ${{ secrets.ACC5_PAT }}
-          ACC6_PAT: ${{ secrets.ACC6_PAT }}
-          ACC7_PAT: ${{ secrets.ACC7_PAT }}
-          ACC8_PAT: ${{ secrets.ACC8_PAT }}
+          ACC0: ${{ secrets.ACC0 }}
+          ACC1: ${{ secrets.ACC1 }}
+          ACC2: ${{ secrets.ACC2 }}
+          ACC3: ${{ secrets.ACC3 }}
+          ACC4: ${{ secrets.ACC4 }}
+          ACC5: ${{ secrets.ACC5 }}
+          ACC6: ${{ secrets.ACC6 }}
+          ACC7: ${{ secrets.ACC7 }}
+          ACC8: ${{ secrets.ACC8 }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          eval "TOKEN=\$${HOST_ACCOUNT}_PAT"
+          eval "TOKEN=\$${HOST_ACCOUNT}"
           sanitize() { sed "s/\`/'/g; s/\"/'/g; s/\$(/DOLLAR(/g; s/\${/DOLLAR{/g"; }
           SAFE_TITLE=$(printf '%s' "$ISSUE_TITLE" | tr -d '`\\$')
           SAFE_BODY=$(printf '%s' "$ISSUE_BODY" | sanitize)
@@ -186,27 +186,27 @@ jobs:
         id: dispatch
         if: steps.prompt.outcome == 'success'
         env:
-          ACC0_PAT: ${{ secrets.ACC0_PAT }}
-          ACC1_PAT: ${{ secrets.ACC1_PAT }}
-          ACC2_PAT: ${{ secrets.ACC2_PAT }}
-          ACC3_PAT: ${{ secrets.ACC3_PAT }}
-          ACC4_PAT: ${{ secrets.ACC4_PAT }}
-          ACC5_PAT: ${{ secrets.ACC5_PAT }}
-          ACC6_PAT: ${{ secrets.ACC6_PAT }}
-          ACC7_PAT: ${{ secrets.ACC7_PAT }}
-          ACC8_PAT: ${{ secrets.ACC8_PAT }}
+          ACC0: ${{ secrets.ACC0 }}
+          ACC1: ${{ secrets.ACC1 }}
+          ACC2: ${{ secrets.ACC2 }}
+          ACC3: ${{ secrets.ACC3 }}
+          ACC4: ${{ secrets.ACC4 }}
+          ACC5: ${{ secrets.ACC5 }}
+          ACC6: ${{ secrets.ACC6 }}
+          ACC7: ${{ secrets.ACC7 }}
+          ACC8: ${{ secrets.ACC8 }}
         run: |
           ACC_IDX="${{ steps.prompt.outputs.acc_index }}"
           case $ACC_IDX in
-            0) DISPATCH_REPO="Mohammadlali/agw-workers";           DISPATCH_TOKEN="$ACC0_PAT" ;;
-            1) DISPATCH_REPO="momonakikugava-pixel/agw-workers";   DISPATCH_TOKEN="$ACC1_PAT" ;;
-            2) DISPATCH_REPO="lali94m-max/agw-workers";            DISPATCH_TOKEN="$ACC2_PAT" ;;
-            3) DISPATCH_REPO="ngocgminh5-debug/agw-workers";       DISPATCH_TOKEN="$ACC3_PAT" ;;
-            4) DISPATCH_REPO="hmmletssee7-design/agw-workers";     DISPATCH_TOKEN="$ACC4_PAT" ;;
-            5) DISPATCH_REPO="kidding602/agw-workers";             DISPATCH_TOKEN="$ACC5_PAT" ;;
-            6) DISPATCH_REPO="mohammadlali0707-stack/agw-workers"; DISPATCH_TOKEN="$ACC6_PAT" ;;
-            7) DISPATCH_REPO="mohammad97okk/agw-workers";          DISPATCH_TOKEN="$ACC7_PAT" ;;
-            8) DISPATCH_REPO="moradzahra85-png/agw-workers";       DISPATCH_TOKEN="$ACC8_PAT" ;;
+            0) DISPATCH_REPO="Mohammadlali/agw-workers";           DISPATCH_TOKEN="$ACC0" ;;
+            1) DISPATCH_REPO="momonakikugava-pixel/agw-workers";   DISPATCH_TOKEN="$ACC1" ;;
+            2) DISPATCH_REPO="lali94m-max/agw-workers";            DISPATCH_TOKEN="$ACC2" ;;
+            3) DISPATCH_REPO="ngocgminh5-debug/agw-workers";       DISPATCH_TOKEN="$ACC3" ;;
+            4) DISPATCH_REPO="hmmletssee7-design/agw-workers";     DISPATCH_TOKEN="$ACC4" ;;
+            5) DISPATCH_REPO="kidding602/agw-workers";             DISPATCH_TOKEN="$ACC5" ;;
+            6) DISPATCH_REPO="mohammadlali0707-stack/agw-workers"; DISPATCH_TOKEN="$ACC6" ;;
+            7) DISPATCH_REPO="mohammad97okk/agw-workers";          DISPATCH_TOKEN="$ACC7" ;;
+            8) DISPATCH_REPO="moradzahra85-png/agw-workers";       DISPATCH_TOKEN="$ACC8" ;;
           esac
           export GH_TOKEN="$DISPATCH_TOKEN"
           echo "Dispatching issue #${{ github.event.issue.number }} to $DISPATCH_REPO (acc=$ACC_IDX)"
@@ -240,7 +240,7 @@ jobs:
           # no relation to who is allowed to read this issue -- the
           # Contents API call below reads from Control-Room itself, under
           # this repo's own access rules.
-          GH_TOKEN="$ACC0_PAT" gh api "repos/Mohammadlali/Control-Room/contents/Reports/agy/${CALLBACK_ID}.txt" \
+          GH_TOKEN="$ACC0" gh api "repos/Mohammadlali/Control-Room/contents/Reports/agy/${CALLBACK_ID}.txt" \
             --jq '.content' 2>/dev/null | base64 -d > /tmp/final_raw.txt || true
           if [ -s /tmp/final_raw.txt ]; then
             head -c 58000 /tmp/final_raw.txt > /tmp/final.txt
