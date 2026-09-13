@@ -1,0 +1,81 @@
+سلام! کد منبع `status2` (ریپازیتوری [Mohammadlali/status-dashboard](https://github.com/Mohammadlali/status-dashboard)) و روال‌های ساخت ایشو به دقت بررسی شد. نتایج تحلیل و پاسخ هر دو سوال شما به شرح زیر است:
+
+---
+
+### ۱. علت قرار گرفتن `@agy` در ابتدای پیام (چرا این اتفاق می‌افتد؟)
+
+در ریپازیتوری `status-dashboard` و فایل [`api/agy_create.js`](https://github.com/Mohammadlali/status-dashboard/blob/main/api/agy_create.js#L106-L114)، ساخت متن ایشو بر اساس یک فرض قدیمی انجام شده است:
+
+```javascript
+// The body must start literally with "@agy " for control-agy.yml's
+// trigger condition (startsWith(...body, '@agy')), for both an issue
+// body and a follow-up comment body.
+const agyBody = `@agy ${message}`;
+```
+
+نویسنده‌ی این اندپوینت تصور می‌کرده شرط اجرای ورکفلو `startsWith` است؛ در حالی که طبق استاندارد یکپارچه‌ی ناوگان (برای امکان هندآف متقابل میان Claude و AGY)، تمام لیسنرهای بات از جمله `control-agy.yml` با شرط **`endsWith`** تنظیم شده‌اند:
+
+```yaml
+(endsWith(github.event.issue.body, '@agy') || endsWith(github.event.issue.body, '@agy\n') || endsWith(github.event.issue.body, '@agy\r\n'))
+```
+
+به همین دلیل، پیام ارسال‌شده از سایت چون `@agy` را در ابتدا قرار می‌داد، هیچ‌گاه ورکفلو را تریگر نمی‌کرد.
+
+---
+
+### ۲. بررسی حالت `@issue` در انتهای پیام (آیا برای این حالت هم باگ وجود دارد؟)
+
+**بله، دقیقاً همین مشکل برای `@issue` هم وجود دارد.**
+
+کد بررسی `@issue` در [`api/agy_create.js`](https://github.com/Mohammadlali/status-dashboard/blob/main/api/agy_create.js#L100-L110) به صورت زیر است:
+
+```javascript
+const isTask = TRAILING_ISSUE_MARKER_RE.test(message);
+if (isTask) {
+  message = message.replace(TRAILING_ISSUE_MARKER_RE, '').trim();
+  if (!message) {
+    res.status(400).json({ error: 'message is empty after removing "@issue"' });
+    return;
+  }
+}
+
+// برای هر دو حالت task و quick_chat این خط اجرا می‌شود:
+const agyBody = `@agy ${message}`;
+```
+
+همان‌طور که مشاهده می‌کنید:
+1. در صورت وجود `@issue` در انتهای پیام، این عبارت از متن پیام حذف شده و متغیر `isTask = true` می‌شود (تا لیبل `mode:quick_chat` نخورد).
+2. **اما بلافاصله متغیر `agyBody` دوباره با `@agy ${message}` ساخته می‌شود.**
+3. در نتیجه، ایشوی ساخته‌شده با `@issue` هم مجدداً با `@agy` در **ابتدای متن** ساخته می‌شود و ربات روی آن هم **تریگر نخواهد شد**.
+4. علاوه بر این، در پیام‌های ادامه‌دار گفتگو (`commentOnIssue`) نیز از همین `agyBody` استفاده می‌شود که باعث می‌شد کامنت‌های بعدی چت هم ربات را فعال نکنند.
+
+---
+
+### ۳. راه‌حل و اصلاح مورد نیاز
+
+در ریپازیتوری `Mohammadlali/status-dashboard`، داخل فایل `api/agy_create.js`، خط ۱۱۰ باید به شکل زیر اصلاح شود:
+
+```diff
+-    // The body must start literally with "@agy " for control-agy.yml's
+-    // trigger condition (startsWith(...body, '@agy')), for both an issue
+-    // body and a follow-up comment body.
+-    const agyBody = `@agy ${message}`;
++    // The body must end with "@agy" for the fleet's trigger convention
++    // (endsWith(...body, '@agy')), for both an issue body and a follow-up comment body.
++    const agyBody = `${message}\n\n@agy`;
+```
+
+با این تغییر:
+- **در حالت چت عادی:** پیام با `@agy` در انتها و با لیبل `mode:quick_chat` ثبت شده و ربات فوراً پاسخ چت را می‌دهد.
+- **در حالت کار واقعی (`@issue`):** عبارت `@issue` حذف شده و متن اصلی با `@agy` در انتها (و بدون لیبل `mode:quick_chat`) ثبت می‌شود و پایپ‌لاین مهندسی ۵ مرحله‌ای AGY اجرا می‌گردد.
+- **در کامنت‌های ادامه چت:** کامنت‌ها نیز با `@agy` در انتها ارسال شده و پاسخ مرحله بعدی را تریگر می‌کنند.
+
+---
+
+### ۴. وضعیت اجرای این تغییر
+
+از آنجا که:
+1. این ایشو بدون پسوند `@issue` ارسال شده بود، سیستم به طور خودکار به آن برچسب `mode:quick_chat` زد (حالت پرسش و پاسخ سریع بدون تغییر کد).
+2. کد فوق متعلق به ریپازیتوری مستقل [Mohammadlali/status-dashboard](https://github.com/Mohammadlali/status-dashboard) است، در حالی که این سشن روی ریپازیتوری [Mohammadlali/Control-Room](https://github.com/Mohammadlali/Control-Room) اجرا می‌شود.
+
+می‌توانید این تغییر یک‌خطی را مستقیماً در ریپوی `status-dashboard` کامیت کنید، یا در صورت تمایل یک ایشو در ریپازیتوری `status-dashboard` باز کنید تا بات آن را کامیت و دپلوی نماید.
