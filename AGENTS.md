@@ -1,13 +1,16 @@
-# Agent Rules for Control-Room (`ACC0`/`Mohammadlali`, the org's management account)
+# Agent Rules for Control-Room (`ACC6`/`mohammadlali0707-stack`, the org's management account as of 2026-09-13)
 
 Applies to every agent, manager, and tool interacting with this repository.
 The non-negotiable laws below are written once here and enforced mechanically.
 
 ## 0. Scope: what belongs here, and what never does
 
-`ACC0` does management only. Anything that is another project's actual
-code, content, or feature work belongs in that project's own host repo, not
-here -- see `Team/COMPANY_SCOPE.md`. An issue opened here is routed by
+**2026-09-13: Control-Room's host moved from `ACC0` to `ACC6`** — see
+`Team/COMPANY_SCOPE.md`'s "What changed 2026-09-13" for the evidence.
+Unlike `ACC0`'s old arrangement, `ACC6` is not management-only: it also
+hosts TEHRAN: BLIND SPOT (`Claud-Cloud-Project`) directly. Anything that is
+ANOTHER project's actual code, content, or feature work still belongs in
+that project's own host repo, not here. An issue opened here is routed by
 `Tools/route_topic.py` before any work starts: local for Control-Room
 topics, forwarded elsewhere for anything else. Never hand-execute a
 forwarded project's task in this repo just because it was easier that turn.

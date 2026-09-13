@@ -7,15 +7,31 @@
 
 ## CURRENT STATE (Overview)
 
-**2026-09-11 -- this repo (`Mohammadlali/Control-Room`, on `ACC0`) is now
-the org's ONE canonical Control-Room, owner's direct instruction.** Until
-this date its own docs described themselves as belonging to `ACC6`/`07`
-(`mohammadlali0707-stack`) -- a second, now-superseded Control-Room that
-lived there. That repo is being retired; see `Team/CHANGELOG.md` for the
-deletion attempt. Do not trust any reference below this block that still
-says `mohammadlali0707-stack/Control-Room` -- read `Team/COMPANY_SCOPE.md`
-for the current, correct account map instead of assuming this file's older
-rows are current.
+**2026-09-13 -- this repo (`mohammadlali0707-stack/Control-Room`, on `ACC6`)
+is now the org's ONE canonical Control-Room, superseding the 2026-09-11
+entry below.** Caught as a live discrepancy, not taken on a claim alone:
+this repo's own git remote was already `mohammadlali0707-stack/Control-Room`;
+`Mohammadlali/control-room` (ACC0) and this repo share an identical HEAD
+(`de0143e6`), meaning ACC0 was being kept in sync FROM here, not the other
+way around; and `agw-workers`' own `agw-worker.yml` already had no
+checkout/push case for `Mohammadlali/Control-Room` at all -- only this
+repo's path resolved to a real token. `control-agy.yml`'s dispatch
+(`target_repo=`) and report-readback were pointing at the wrong (unreachable)
+target and are fixed in the same change. Full evidence and what did/didn't
+change: `Team/COMPANY_SCOPE.md`'s "What changed 2026-09-13". Unlike ACC0's
+old arrangement, ACC6 is NOT management-only -- it hosts Control-Room and
+TEHRAN: BLIND SPOT side by side; the old "management-only account"
+invariant is retired, not reassigned (`Tools/check_company_scope.py`
+updated to match).
+
+**2026-09-11 (superseded above) -- this repo (`Mohammadlali/Control-Room`,
+on `ACC0`) is now the org's ONE canonical Control-Room, owner's direct
+instruction.** Until this date its own docs described themselves as
+belonging to `ACC6`/`07` (`mohammadlali0707-stack`) -- a second, then
+believed superseded Control-Room that lived there. Do not trust any
+reference below this block that still says `Mohammadlali/Control-Room` or
+`ACC0` as the current host -- read `Team/COMPANY_SCOPE.md` for the current,
+correct account map instead of assuming this file's older rows are current.
 
 **2026-09-12 -- `status-dashboard` is a 4th tracked project (ACC0), and
 this repo + `status-dashboard` are TEMPORARILY PUBLIC** (ACC0's private-repo
@@ -29,12 +45,12 @@ and `Team/CHANGELOG.md` (commits `9783033`..`67652d5`, `0cdb146`,
 
 | Workstream | Status | Lead / Runner | Target Repo |
 |------------|--------|---------------|-------------|
-| 1. Control-Room Core & Gates | ACTIVE | Local / AGY Bot / MCP | `Mohammadlali/Control-Room` (this repo, on `ACC0`) |
-| 2. Cloud Runner Workflows | OPERATIONAL | GitHub Actions / AGY | `Mohammadlali/agw-workers` + the other 8 accounts' `agw-workers` (all 9 public, unlimited minutes) |
+| 1. Control-Room Core & Gates | ACTIVE | Local / AGY Bot / MCP | `mohammadlali0707-stack/Control-Room` (this repo, on `ACC6`) |
+| 2. Cloud Runner Workflows | OPERATIONAL | GitHub Actions / AGY | `mohammadlali0707-stack/agw-workers` + the other 8 accounts' `agw-workers` (all 9 public, unlimited minutes) |
 | 3. Topic-based issue routing | ACTIVE, 4 projects | `Tools/route_topic.py` via `control-agy.yml` | this repo |
 | 4. Project Integrations (TEHRAN: BLIND SPOT) | ACTIVE, hosted elsewhere | TBD | `mohammadlali0707-stack/Claud-Cloud-Project` (`ACC6`/`07`) -- the ONLY home for TBS as of 2026-09-11; Private |
 | 5. Project Integrations (AirboxVIP Coffeenet) | ACTIVE, hosted elsewhere | TBD | `momonakikugava-pixel/AirboxVIP_Coffeenet` (`ACC1`/Momona); Private |
-| 6. Status Dashboard | ACTIVE, TEMP PUBLIC | GitHub Actions + cron-job.org (no Claude dependency) | `Mohammadlali/status-dashboard` (`ACC0`) -- `status.airboxvip.top`, behind Vercel SSO regardless of repo visibility |
+| 6. Status Dashboard | ACTIVE, TEMP PUBLIC | GitHub Actions + cron-job.org (no Claude dependency) | `mohammadlali0707-stack/status-dashboard` (`ACC6`, moved from `ACC0` 2026-09-13) -- `status.airboxvip.top`, behind Vercel SSO regardless of repo visibility |
 | 7. AGY-output leak fix + fleet-dispatch secret-name fix | DONE 2026-09-12, verified live | AGY worker output now committed to target repo's `Reports/agy/`, read via Contents API; fleet secrets renamed | `agw-worker.yml` (all 9 accounts) + `control-agy.yml` (this repo) |
 | 8. Chat-with-@agy on status-dashboard | IN PROGRESS (backend not started) | Serverless functions + issue-based dispatch | `status-dashboard` (frontend/API) + this repo (issue target) |
 

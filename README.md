@@ -1,14 +1,16 @@
 # Control-Room
 
 > **Central Command Center & Governance for the whole organization — hosted
-> on `ACC0` (`Mohammadlali`), the org's dedicated management account.**
+> on `ACC6` (`mohammadlali0707-stack`) as of 2026-09-13, replacing `ACC0`.**
 
 `Control-Room` is the operational headquarters for a 9-account GitHub
 organization (`ACC0`..`ACC8`). It orchestrates projects, dispatches cloud
 workers, and enforces mechanical verification gates across every repository
-the org runs — but it never runs another project's code itself. **`ACC0`
-does management only.** Each project has exactly one canonical host
-elsewhere in the org; see `Team/COMPANY_SCOPE.md` for the full map.
+the org runs — but it never runs another project's code itself, except for
+TEHRAN: BLIND SPOT, which `ACC6` also hosts directly (unlike the old `ACC0`
+arrangement, `ACC6` is not management-only). Each other project has exactly
+one canonical host elsewhere in the org; see `Team/COMPANY_SCOPE.md` for
+the full map.
 
 ---
 

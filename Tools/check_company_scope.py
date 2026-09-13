@@ -9,8 +9,13 @@ Checks, each one a real failure mode seen elsewhere in this project's
 history when a JSON and its prose twin were edited separately:
   - every account login in the JSON appears somewhere in the markdown
   - every project's host_repo in the JSON appears somewhere in the markdown
-  - ACC0 is marked management_only in the JSON (the one hard invariant)
   - the JSON parses at all
+
+2026-09-13: the old hard invariant ("ACC0 is marked management_only") was
+removed, not reassigned. Control-Room's host moved from ACC0 to ACC6, and
+ACC6 also hosts a real product (TBS) alongside it -- no account in this org
+is exclusively management-only anymore. See Team/COMPANY_SCOPE.md's
+"What changed 2026-09-13" section.
 
 Exit 1 on any failure. ASCII only.
 """
@@ -46,10 +51,6 @@ def main():
         if proj["host_repo"] not in md:
             problems.append("project '{0}' host_repo '{1}' not named in {2}".format(
                 name, proj["host_repo"], os.path.basename(MD_PATH)))
-
-    acc0 = scope["accounts"].get("ACC0", {})
-    if not acc0.get("management_only"):
-        problems.append("ACC0 is not marked management_only in company_scope.json")
 
     if problems:
         print("FAIL: {0} problem(s)".format(len(problems)))

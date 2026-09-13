@@ -12,15 +12,21 @@ Change both files together, in the same commit.
 
 ## The rule, stated once
 
-**ACC0 (`Mohammadlali`, this account) does management only.** No game, no
-customer-facing product, no other project's code is ever developed here.
-Its repos doing substantive work are `Control-Room` itself (this repo),
-`status-dashboard` (2026-09-12 -- the org-wide status feed/dashboard site
-at `status.airboxvip.top`, an internal reporting tool for this same
-management function, not a separate product), and its own `agw-workers`
-runner fleet, which executes Control-Room's own tasks (and, since
-2026-09-12, `status-dashboard`'s AGY-output writes -- see
-`Team/CHANGELOG.md`) — never another project's actual code.
+**2026-09-13 correction: ACC6 (`mohammadlali0707-stack`, this account) is
+now the org's Control-Room, replacing ACC0.** See "What changed 2026-09-13"
+below for the evidence this rests on. Unlike ACC0's old arrangement, ACC6
+is **not** management-only: it hosts Control-Room (management) *and*
+TEHRAN: BLIND SPOT (`Claud-Cloud-Project`, a real product) side by side.
+The old "one account, management-only" invariant is retired along with
+ACC0's role, not reassigned — no account in this org is exclusively
+management-only anymore.
+
+ACC6's repos doing substantive work are `Control-Room` itself (this repo),
+`Claud-Cloud-Project` (TEHRAN: BLIND SPOT — unchanged, see the routing
+table), `status-dashboard` (moved here from ACC0 alongside Control-Room —
+the org-wide status feed/dashboard site at `status.airboxvip.top`), and its
+own `agw-workers` runner fleet, which executes Control-Room's own tasks
+(and `status-dashboard`'s AGY-output writes — see `Team/CHANGELOG.md`).
 
 **Every other project has exactly one canonical host repo.** A project's
 code, issues, and history live in ONE place. An account can additionally
@@ -32,13 +38,13 @@ and only one account holds the host role per project.
 
 | Account | GitHub login | Nickname | Hosts (canonical repo) | Also works TBS ring domain |
 |---|---|---|---|---|
-| ACC0 | `Mohammadlali` | 1997 | **Control-Room** (this repo) + **`status-dashboard`** (org status feed, 2026-09-12) — management only | — (left the ring permanently, 2026-09-10) |
+| ACC0 | `Mohammadlali` | 1997 | — (no project hosted here as of 2026-09-13; see "What changed 2026-09-13") | — (left the ring permanently, 2026-09-10) |
 | ACC1 | `momonakikugava-pixel` | Momona | `AirboxVIP_Coffeenet` | D — Verification and Integration/CI (primary) |
 | ACC2 | `lali94m-max` | 94 | — (no project of its own yet) | I — Tools and audit (primary), D (secondary) |
 | ACC3 | `ngocgminh5-debug` | ngocg | — (no project of its own yet) | A — Visual Assets and AI Generation (primary), I (secondary) |
 | ACC4 | `hmmletssee7-design` | lets | — (no project of its own yet) | B — VN Engine and Flow (primary), A (secondary) |
 | ACC5 | `kidding602` | Just | — (no project of its own yet) | C — Persian UI and Typography QA (primary), O (secondary) |
-| ACC6 | `mohammadlali0707-stack` | 07 | **`Claud-Cloud-Project`** — the ONLY home of TEHRAN: BLIND SPOT (TBS), as of 2026-09-11 | O — Operations and Fleet Orchestration (primary), B (secondary) |
+| ACC6 | `mohammadlali0707-stack` | 07 | **Control-Room** (this repo, moved here 2026-09-13) + **`status-dashboard`** (org status feed, moved here 2026-09-13) + **`Claud-Cloud-Project`** — the ONLY home of TEHRAN: BLIND SPOT (TBS), as of 2026-09-11 | O — Operations and Fleet Orchestration (primary), B (secondary) |
 | ACC7 | `mohammad97okk` | M2 | — (no project of its own yet) | E — Android Build and Packaging (primary), C (secondary) |
 | ACC8 | `moradzahra85-png` | zahra | — (no project of its own yet) | F — Narrative and Audio (primary), E (secondary) |
 
@@ -95,6 +101,40 @@ dispatch from there via its own `agy-issue-bot.yml`.
   failing until this was caught and fixed live (see `Team/CHANGELOG.md`,
   commit `0cdb146`) -- if you are debugging "the bot never replies," check
   this is still fixed before assuming something else broke it.
+
+## What changed 2026-09-13 — Control-Room's host moved from ACC0 to ACC6
+
+**Owner-confirmed: ACC6 (`mohammadlali0707-stack`) is now the org's one
+Control-Room, replacing ACC0.** This was caught as a live discrepancy
+between this file and the actual git/CI state, not taken on the owner's
+word alone — three independent checks agreed before the owner was asked to
+confirm it:
+
+1. This repo's own git remote is `mohammadlali0707-stack/Control-Room`, not
+   `Mohammadlali/Control-Room` — the account this file itself, until this
+   edit, said was the only real one.
+2. `Mohammadlali/control-room` (ACC0) and `mohammadlali0707-stack/
+   Control-Room` (ACC6) are both live, separate GitHub repos and share the
+   exact same HEAD commit (`de0143e6`, 2026-09-13) — same for
+   `status-dashboard` (`67d6064`, 2026-09-13). Neither is stale, so ACC0 is
+   being kept in sync FROM ACC6, the reverse of what the 2026-09-11 entry
+   above assumed.
+3. `agw-workers`' own `agw-worker.yml` (the fleet worker every dispatch
+   actually runs) has no checkout/push case arm for `Mohammadlali/
+   Control-Room` at all — only `mohammadlali0707-stack/Control-Room` maps
+   to a real token (`ACC6_PAT`). `control-agy.yml` was still dispatching
+   with `target_repo=Mohammadlali/Control-Room`, a target the worker fleet
+   no longer recognized (it would hit "Unknown target_repo -- not
+   pushing.") — fixed in the same change; see `Team/CHANGELOG.md`.
+
+**`status-dashboard` moves with it**, on the same identical-HEAD evidence —
+it was already described as coupled to Control-Room's own management
+function, not a separate product.
+
+**What did NOT change:** TBS's host (`Claud-Cloud-Project` on ACC6) was
+already correct. AirboxVIP's host (ACC1) was not part of what the owner
+confirmed and is left as-is here. The ring-worker domain assignments
+(ACC1-ACC8's TBS ring roles) are unaffected.
 
 ## Two hard rules the router enforces
 

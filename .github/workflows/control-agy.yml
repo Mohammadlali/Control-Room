@@ -155,7 +155,7 @@ jobs:
           esac
           {
             printf '%s\n' 'You are AGY, an AI software engineer for Control-Room.'
-            printf '%s\n' 'Control-Room is the central management repo for a 9-account GitHub org (ACC0-ACC8). ACC0 handles management only; no other project ever runs here.'
+            printf '%s\n' 'Control-Room is the central management repo for a 9-account GitHub org (ACC0-ACC8), hosted on ACC6 (mohammadlali0707-stack) as of 2026-09-13; no other project runs in THIS repo, though ACC6 itself also hosts TEHRAN: BLIND SPOT separately.'
             printf 'Active branch: %s\n' "$BRANCH"
             printf '%s\n' ''
             printf '%s\n' '=== WORKING TREE ==='
@@ -243,7 +243,7 @@ jobs:
           gh workflow run agw-worker.yml \
             --repo "$DISPATCH_REPO" \
             --field "prompt=$PROMPT" \
-            --field "target_repo=Mohammadlali/Control-Room" \
+            --field "target_repo=mohammadlali0707-stack/Control-Room" \
             --field "target_branch=main" \
             --field "acc_index=$(( ACC_IDX + 1 ))" \
             --field "callback_id=$CALLBACK_ID"
@@ -268,7 +268,7 @@ jobs:
           # no relation to who is allowed to read this issue -- the
           # Contents API call below reads from Control-Room itself, under
           # this repo's own access rules.
-          GH_TOKEN="$ACC0" gh api "repos/Mohammadlali/Control-Room/contents/Reports/agy/${CALLBACK_ID}.txt" \
+          GH_TOKEN="$ACC6" gh api "repos/mohammadlali0707-stack/Control-Room/contents/Reports/agy/${CALLBACK_ID}.txt" \
             --jq '.content' 2>/dev/null | base64 -d > /tmp/final_raw.txt || true
           if [ -s /tmp/final_raw.txt ]; then
             head -c 58000 /tmp/final_raw.txt > /tmp/final.txt

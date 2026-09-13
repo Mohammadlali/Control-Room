@@ -2,7 +2,7 @@
   "v": 1,
   "note": "Machine-readable twin of Team/COMPANY_SCOPE.md. Tools/check_company_scope.py checks the two agree. Tools/route_topic.py reads this file, not the markdown, to decide where an issue goes.",
   "accounts": {
-    "ACC0": {"login": "Mohammadlali", "nickname": "1997", "management_only": true},
+    "ACC0": {"login": "Mohammadlali", "nickname": "1997"},
     "ACC1": {"login": "momonakikugava-pixel", "nickname": "Momona"},
     "ACC2": {"login": "lali94m-max", "nickname": "94"},
     "ACC3": {"login": "ngocgminh5-debug", "nickname": "ngocg"},
@@ -14,7 +14,7 @@
   },
   "projects": {
     "control-room": {
-      "host_account": "ACC0",
+      "host_account": "ACC6",
       "host_repo": "Control-Room",
       "keywords": ["control-room", "control room", "org.json", "governance",
         "collaborator", "account scope", "company scope", "topic router",
@@ -39,7 +39,7 @@
         "kiosk", "menu ordering"]
     },
     "status_dashboard": {
-      "host_account": "ACC0",
+      "host_account": "ACC6",
       "host_repo": "status-dashboard",
       "display_name": "Status Dashboard",
       "keywords": ["status dashboard", "status-dashboard", "status feed",
