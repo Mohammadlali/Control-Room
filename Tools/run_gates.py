@@ -29,6 +29,11 @@ GATES = [
     ("check_workflow_safety", [sys.executable, os.path.join(ROOT, "Tools", "check_workflow_safety.py")]),
     ("check_company_scope",   [sys.executable, os.path.join(ROOT, "Tools", "check_company_scope.py")]),
     ("probe_route_topic",     [sys.executable, os.path.join(ROOT, "Tools", "probe_route_topic.py")]),
+    ("check_names",           [sys.executable, os.path.join(ROOT, "Tools", "check_names.py")]),
+    ("check_cited_flags",     [sys.executable, os.path.join(ROOT, "Tools", "check_cited_flags.py")]),
+    ("probe_check_cited_flags", [sys.executable, os.path.join(ROOT, "Tools", "probe_check_cited_flags.py")]),
+    ("check_heredoc_backticks", [sys.executable, os.path.join(ROOT, "Tools", "check_heredoc_backticks.py")]),
+    ("probe_check_heredoc_backticks", [sys.executable, os.path.join(ROOT, "Tools", "probe_check_heredoc_backticks.py")]),
 ]
 
 
