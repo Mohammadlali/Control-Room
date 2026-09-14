@@ -116,9 +116,10 @@ jobs:
           SAFE_TITLE=$(printf '%s' "$ISSUE_TITLE" | tr -d '`\\$')
           SAFE_BODY=$(printf '%s' "$ISSUE_BODY" | sanitize)
           {
-            printf '@agy %s\n\n' "$SAFE_TITLE"
+            printf '%s\n\n' "$SAFE_TITLE"
             printf '%s\n\n' "$SAFE_BODY"
-            printf '_Forwarded from Control-Room#%s by the topic router (Team/route_topic.py)._\n' "$ISSUE_NUM"
+            printf '_Forwarded from Control-Room#%s by the topic router (Team/route_topic.py)._\n\n' "$ISSUE_NUM"
+            printf '@agy\n'
           } > /tmp/forward_body.txt
           FWD_URL=$(GH_TOKEN="$TOKEN" gh issue create \
             --repo "$HOST_LOGIN/$HOST_REPO" \

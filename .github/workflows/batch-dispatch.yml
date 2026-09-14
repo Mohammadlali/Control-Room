@@ -64,7 +64,7 @@ jobs:
             # Open the issue
             ISSUE_URL=$(gh issue create \
               --title "$TASK" \
-              --body "@agy $TASK")
+              --body "$TASK"$'\n\n@agy')
             ISSUE_NUM=$(echo "$ISSUE_URL" | grep -oP '[0-9]+$')
             gh issue edit "$ISSUE_NUM" --add-label "agy-acc:$ACC_INDEX" 2>/dev/null || true
             echo "Created: $ISSUE_URL (acc=$ACC_INDEX)"
