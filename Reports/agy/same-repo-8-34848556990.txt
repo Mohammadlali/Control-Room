@@ -1,0 +1,77 @@
+I am checking the git remote access permissions.
+### گزارش تحلیل و اصلاح باگ قرارگیری `@agy` در پیام‌ها (Issue #8 / Issue #14)
+
+مشکل گزارش‌شده مبنی بر قرار گرفتن تگ `@agy` در ابتدای پیام به جای انتهای آن در تمامی مؤلفه‌ها و ریپازیتوری‌های ناوگان بررسی و رفع شد.
+
+---
+
+### ۱. ریشه‌یابی باگ (Root Cause Analysis)
+
+طبق استاندارد یکپارچه‌ی ناوگان (`fleet-wide trigger convention`)، تمام گردش‌کارها و لیسنرهای ربات (`agy-issue-bot.yml`, [`control-agy.yml`](file:///tmp/agent-repo/.github/workflows/control-agy.yml), `agw-claude.yml`) از شرط **`endsWith`** (انتهای پیام) برای تشخیص تگ `@agy` استفاده می‌کنند. قرارگیری `@agy` در ابتدای پیام باعث نادیده گرفته شدن پیام و عدم اجرای ربات می‌شد.
+
+محل‌های وقوع این باگ به شرح زیر شناسایی شدند:
+
+1. **ریپازیتوری [`Control-Room`](file:///tmp/agent-repo)**:
+   - در فایل [`.github/workflows/control-agy.yml`](file:///tmp/agent-repo/.github/workflows/control-agy.yml#L118-L122): در مرحله‌ی فوروارد ایشو به ریپازیتوری پروژه‌های دیگر (`forward_body.txt`)، تگ `@agy` به اشتباه با دستور `printf '@agy %s\n\n' "$SAFE_TITLE"` در ابتدای متن قرار داده می‌شد و انتهای پیام فاقد `@agy` بود.
+   - در فایل [`.github/workflows/batch-dispatch.yml`](file:///tmp/agent-repo/.github/workflows/batch-dispatch.yml#L66-L67): ساخت متن با پارامتر `--body "@agy $TASK"` انجام می‌شد که `@agy` را در اول قرار می‌داد.
+   - در فایل [`.github/workflows/control-agy-context.yml`](file:///tmp/agent-repo/.github/workflows/control-agy-context.yml#L18): شرط تریگر کامنت‌های گفتگوها همچنان از `startsWith` قدیمی استفاده می‌کرد.
+
+2. **ریپازیتوری `status-dashboard` (سامانه چت تحت وب status2)**:
+   - در فایل `api/agy_create.js`: قبلاً متن پیام با `const agyBody = '@agy ' + message;` ساخته می‌شد که تگ را در ابتدای پیام قرار می‌داد. در آخرین کامیت نیز به اشتباه `const agyBody = message;` قرار داده شده بود با این فرض که کاربر خود به صورت دستی `@agy` را تایپ کند؛ در حالی که کاربران چت وب فقط سوال خود را می‌پرسند یا برای کارهای واقعی `@issue` می‌گذارند. در نتیجه هیچ پیامی بات را تریگر نمی‌کرد.
+
+3. **ریپازیتوری `agw-workers`**:
+   - در `README.md` و گردش‌کار `relay-open-issue.yml` عبارات راهنما همچنان به اشتباه شروع پیام با `@agy` را ذکر کرده بودند.
+
+---
+
+### ۲. اصلاحات انجام‌شده در [`Control-Room`](file:///tmp/agent-repo)
+
+تغییرات زیر به طور کامل اعمال، تست و با گیت‌های اعتبارسنجی تایید شدند:
+
+1. **[`.github/workflows/control-agy.yml`](file:///tmp/agent-repo/.github/workflows/control-agy.yml)**: ساخت بدنه در مرحله فوروارد اصلاح شد تا عنوان به صورت تمیز در ابتدا قرار گرفته و `@agy` در انتهای بدنه درج شود:
+   ```bash
+   {
+     printf '%s\n\n' "$SAFE_TITLE"
+     printf '%s\n\n' "$SAFE_BODY"
+     printf '_Forwarded from Control-Room#%s by the topic router (Team/route_topic.py)._\n\n' "$ISSUE_NUM"
+     printf '@agy\n'
+   } > /tmp/forward_body.txt
+   ```
+2. **[`.github/workflows/batch-dispatch.yml`](file:///tmp/agent-repo/.github/workflows/batch-dispatch.yml)**: به ساختار انتهای پیام تغییر یافت:
+   ```bash
+   --body "$TASK"$'\n\n@agy'
+   ```
+3. **[`.github/workflows/control-agy-context.yml`](file:///tmp/agent-repo/.github/workflows/control-agy-context.yml)**: شرط تریگر از `startsWith` به `endsWith` اصلاح شد.
+4. **مستندات و گیت‌ها**: گزارش تأیید تجربی در [`Team/reports/008_issue_8_agy_placement_fix.md`](file:///tmp/agent-repo/Team/reports/008_issue_8_agy_placement_fix.md) ثبت و در [`Team/CHANGELOG.md`](file:///tmp/agent-repo/Team/CHANGELOG.md) با کامیت `0ee6a8d` درج گردید.
+   - اجرای [`Tools/check_changelog.py`](file:///tmp/agent-repo/Tools/check_changelog.py)، [`Tools/check_cited_flags.py`](file:///tmp/agent-repo/Tools/check_cited_flags.py)، [`Tools/check_names.py`](file:///tmp/agent-repo/Tools/check_names.py) و [`Tools/validate_yaml.py`](file:///tmp/agent-repo/Tools/validate_yaml.py) همگی با موفقیت (Exit Code 0) پاس شدند.
+
+---
+
+### ۳. تغییرات مورد نیاز برای `status-dashboard` (توسط Claude اعمال شود)
+
+در فایل `api/agy_create.js` ریپازیتوری `mohammadlali0707-stack/status-dashboard`:
+
+```javascript
+// خط 37
+const TRAILING_MARKER_RE = /\s*@(issue|agy)\s*$/i;
+
+// خطوط 108 الی 114
+const isTask = TRAILING_MARKER_RE.test(message);
+if (isTask) {
+  message = message.replace(TRAILING_MARKER_RE, '').trim();
+  if (!message) {
+    res.status(400).json({ error: 'message is empty after removing marker' });
+    return;
+  }
+}
+
+// Every message sent to GitHub must end with @agy to trigger the bot
+const agyBody = `${message}\n\n@agy`;
+```
+
+با این تغییر:
+- اگر کاربر پیام عادی بنویسد: با لیبل `mode:quick_chat` و با `@agy` در انتها ارسال شده و ربات فوراً به سوال پاسخ می‌دهد.
+- اگر کاربر در انتها `@issue` یا `@agy` بگذارد: نشانگر از متن اصلی و عنوان پاک شده، ایشو به عنوان تسک رسمی (بدون لیبل `quick_chat`) با `@agy` در انتها ثبت می‌شود و پایپ‌لاین کامل مهندسی اجرا می‌گردد.
+- کامنت‌های ادامه چت نیز با `${message}\n\n@agy` ارسال می‌شوند و ربات پاسخ دورهای بعدی را نیز ارسال می‌کند.
+
+@claude
